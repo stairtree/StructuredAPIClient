@@ -20,7 +20,22 @@ extension URLSession: Transport {
         let task = self.dataTask(with: request) { (data, response, error) in
             guard let response = response as? HTTPURLResponse else { return completion(.failure(APIError.invalidResponse)) }
 
+            if let error = error {
+                switch (error as NSError).code {
+                case NSURLErrorNotConnectedToInternet,
+                     NSURLErrorInternationalRoamingOff,
+                     NSURLErrorSecureConnectionFailed,
+                     NSURLErrorNetworkConnectionLost,
+                     NSURLErrorTimedOut,
+                     NSURLErrorCancelled:
+                    return completion(.failure(APIError.network))
+                default:
+                    return completion(.failure(error))
+                }
+            }
+
             switch response.statusCode {
+            case 400: return completion(.failure(APIError.badRequest))
             case 401: return completion(.failure(APIError.unauthorized))
             case 403: return completion(.failure(APIError.forbidden))
             case 404: return completion(.failure(APIError.notFound))
@@ -32,8 +47,9 @@ extension URLSession: Transport {
                 return completion(.failure(APIError.invalidResponse))
             }
             
-            if let error = error { completion(.failure(error)) }
-            else if let data = data { completion(.success(data)) }
+            if let data = data { completion(.success(data)) }
+
+            // We should never reach this point
         }
         task.resume()
     }

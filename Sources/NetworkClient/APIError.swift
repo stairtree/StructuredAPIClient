@@ -4,10 +4,11 @@ import Foundation
 
 
 public enum APIError: Error {
-    case notFound
+    case badRequest
     case unauthorized
     case forbidden
     case invalidResponse
+    case notFound
     case methodNotAllowed
     case invalidData
     case parsingError
