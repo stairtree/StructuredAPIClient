@@ -17,7 +17,21 @@ public protocol NetworkRequest {
 extension URLSession: Transport {
     public func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void)
     {
-        let task = self.dataTask(with: request) { (data, _, error) in
+        let task = self.dataTask(with: request) { (data, response, error) in
+            guard let response = response as? HTTPURLResponse else { return completion(.failure(APIError.invalidResponse)) }
+
+            switch response.statusCode {
+            case 401: return completion(.failure(APIError.unauthorized))
+            case 403: return completion(.failure(APIError.forbidden))
+            case 404: return completion(.failure(APIError.notFound))
+            case 405: return completion(.failure(APIError.methodNotAllowed))
+            default: break
+            }
+
+            guard 200..<300 ~= response.statusCode else {
+                return completion(.failure(APIError.invalidResponse))
+            }
+            
             if let error = error { completion(.failure(error)) }
             else if let data = data { completion(.success(data)) }
         }
