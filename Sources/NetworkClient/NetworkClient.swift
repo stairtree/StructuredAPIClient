@@ -19,7 +19,11 @@ extension URLSession: Transport {
     {
         let task = self.dataTask(with: request) { (data, response, error) in
             guard let response = response as? HTTPURLResponse else {
-                if let error = error as? NSError, error.code == NSURLErrorCannotConnectToHost {
+                if
+                    let error = error as NSError?,
+                    error.code == NSURLErrorCannotConnectToHost ||
+                    error.code == NSURLErrorTimedOut
+                {
                     return completion(.failure(APIError.serverUnrachable))
                 } else {
                     return completion(.failure(APIError.invalidResponse))
@@ -32,7 +36,6 @@ extension URLSession: Transport {
                      NSURLErrorInternationalRoamingOff,
                      NSURLErrorSecureConnectionFailed,
                      NSURLErrorNetworkConnectionLost,
-                     NSURLErrorTimedOut,
                      NSURLErrorCancelled:
                     return completion(.failure(APIError.network))
                 default:
