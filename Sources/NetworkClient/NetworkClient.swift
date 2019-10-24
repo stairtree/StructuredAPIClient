@@ -18,7 +18,13 @@ extension URLSession: Transport {
     public func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void)
     {
         let task = self.dataTask(with: request) { (data, response, error) in
-            guard let response = response as? HTTPURLResponse else { return completion(.failure(APIError.invalidResponse)) }
+            guard let response = response as? HTTPURLResponse else {
+                if let error = error as? NSError, error.code == NSURLErrorCannotConnectToHost {
+                    return completion(.failure(APIError.serverUnrachable))
+                } else {
+                    return completion(.failure(APIError.invalidResponse))
+                }
+            }
 
             if let error = error {
                 switch (error as NSError).code {
