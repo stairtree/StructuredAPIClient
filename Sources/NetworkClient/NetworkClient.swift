@@ -24,7 +24,7 @@ extension URLSession: Transport {
                     error.code == NSURLErrorCannotConnectToHost ||
                     error.code == NSURLErrorTimedOut
                 {
-                    return completion(.failure(APIError.serverUnrachable))
+                    return completion(.failure(APIError.serverUnreachable))
                 } else {
                     return completion(.failure(APIError.invalidResponse))
                 }

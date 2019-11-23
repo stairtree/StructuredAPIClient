@@ -13,7 +13,7 @@ public enum APIError: Error {
     case invalidData
     case parsingError
     case network
-    case serverUnrachable
+    case serverUnreachable
 }
 
 extension APIError: LocalizedError {
