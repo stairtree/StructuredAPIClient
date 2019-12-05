@@ -2,9 +2,15 @@
 
 import Foundation
 
+public enum Response {
+    case success(Data)
+    case failure(Data)
+    case error(Error)
+}
+
 // A transport maps a URLRequest to Data, asynchronously
 public protocol Transport {
-    func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void)
+    func send(request: URLRequest, completion: @escaping (Response) -> Void)
 }
 
 public protocol NetworkRequest {
@@ -12,10 +18,17 @@ public protocol NetworkRequest {
 
     func makeRequest(baseURL: URL) throws -> URLRequest
     func parseResponse(_ data: Data) throws -> ResponseDataType
+    func parseError(_ data: Data) throws -> Error
+}
+
+extension NetworkRequest {
+    public func parseError(_ data: Data) throws -> Error {
+        return APIError.invalidResponse
+    }
 }
 
 extension URLSession: Transport {
-    public func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void)
+    public func send(request: URLRequest, completion: @escaping (Response) -> Void)
     {
         let task = self.dataTask(with: request) { (data, response, error) in
             guard let response = response as? HTTPURLResponse else {
@@ -24,9 +37,9 @@ extension URLSession: Transport {
                     error.code == NSURLErrorCannotConnectToHost ||
                     error.code == NSURLErrorTimedOut
                 {
-                    return completion(.failure(APIError.serverUnreachable))
+                    return completion(.error(APIError.serverUnreachable))
                 } else {
-                    return completion(.failure(APIError.invalidResponse))
+                    return completion(.error(APIError.invalidResponse))
                 }
             }
 
@@ -37,28 +50,30 @@ extension URLSession: Transport {
                      NSURLErrorSecureConnectionFailed,
                      NSURLErrorNetworkConnectionLost,
                      NSURLErrorCancelled:
-                    return completion(.failure(APIError.network))
+                    return completion(.error(APIError.network))
                 default:
-                    return completion(.failure(error))
+                    return completion(.error(error))
                 }
             }
 
             switch response.statusCode {
-            case 400: return completion(.failure(APIError.badRequest))
-            case 401: return completion(.failure(APIError.unauthorized))
-            case 403: return completion(.failure(APIError.forbidden))
-            case 404: return completion(.failure(APIError.notFound))
-            case 405: return completion(.failure(APIError.methodNotAllowed))
+            case 400: return completion(.error(APIError.badRequest))
+            case 401: return completion(.error(APIError.unauthorized))
+            case 403: return completion(.error(APIError.forbidden))
+            case 404: return completion(.error(APIError.notFound))
+            case 405: return completion(.error(APIError.methodNotAllowed))
             default: break
             }
 
             guard 200..<300 ~= response.statusCode else {
-                return completion(.failure(APIError.invalidResponse))
+                if let data = data {
+                    return completion(.failure(data))
+                } else {
+                    return completion(.error(APIError.invalidResponse))
+                }
             }
             
-            if let data = data { completion(.success(data)) }
-
-            // We should never reach this point
+            return completion(.success(data ?? Data()))
         }
         task.resume()
     }
@@ -80,10 +95,15 @@ public final class NetworkClient {
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
 
             // Send it to the transport
-            transport.send(request: urlRequest) { data in
-                let result = Result { () -> Request.ResponseDataType in
-                    return try req.parseResponse(data.get())
+            transport.send(request: urlRequest) { response in
+                let result = Result { () throws -> Request.ResponseDataType in
+                    switch response {
+                    case let .success(data): return try req.parseResponse(data)
+                    case let .failure(data): throw try req.parseError(data)
+                    case let .error(error): throw error
+                    }
                 }
+
                 completion(result)
             }
         } catch {

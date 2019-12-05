@@ -16,13 +16,13 @@ final class TestTransport: Transport {
         self.assertRequest = assertRequest
     }
 
-    func send(request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) {
+    func send(request: URLRequest, completion: @escaping (Response) -> Void) {
         assertRequest(request)
         history.append(request)
         if !responseData.isEmpty {
             completion(.success(responseData.removeFirst()))
         } else {
-            completion(.failure(TestTransportError.tooManyRequests))
+            completion(.error(TestTransportError.tooManyRequests))
         }
     }
 }
