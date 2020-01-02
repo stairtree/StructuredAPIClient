@@ -3,116 +3,69 @@
 import Foundation
 
 // Handle token auth and add headers to an existing transport
-public class TokenAuth: Transport {
+public final class TokenAuth: Transport {
     private let base: Transport
-
-    var accessToken: AccessToken? = nil
-    var refreshToken: String? = nil
-
-    let tokenProvider: TokenProvider
+    var auth: AuthState
 
     public init(base: Transport, tokenProvider: TokenProvider) {
         self.base = base
-        self.tokenProvider = tokenProvider
+        self.auth = AuthState(provider: tokenProvider)
     }
 
-    public func send(request: URLRequest, completion: @escaping (Response) -> Void)
-    {
-        // if current token is nil, or expired is close or passed, first fetch new token, then send request with headers
-        guard let accessToken = self.accessToken else {
-            return tokenProvider.fetchToken(completion: { result in
-                let (accessToken, refreshToken) = try! result.get()
-                self.accessToken = accessToken
-                self.refreshToken = refreshToken
-                AddHeaders(base: base, headers: ["Authorization": "Bearer \(accessToken.token)"])
-                    .send(request: request, completion: completion)
-            })
-        }
-
-        // AddHeaders(base: base, headers: ["Authorization": "Bearer \(self.accessToken!.token!)"]))
-        base.send(request: request) { response in
-            // FIXME: handle token expired here
-
-            // If the response indicates that the token is expired, we first ask the provider for a new one, and then send our request again, calling the completion at the end. we should probably count the number of attempts and abort after 3 failed ones.
-            completion(response)
+    public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
+        self.auth.token { result in
+            switch result {
+            case let .failure(error): completion(.error(error))
+            case let .success(token):
+                let headers = ["Authorization": "Bearer \(token)"]
+                return AddHeaders(base: self.base, headers: headers).send(request: request, completion: completion)
+            }
         }
     }
 }
 
-// Rough sketch
 public protocol TokenProvider {
     // get access token and refresh token
     func fetchToken(completion: (Result<(AccessToken, String), Error>) -> Void)
+
     // refreh the current token
     func refreshToken(withRefreshToken: String, completion: (Result<AccessToken, Error>) -> Void)
 }
-
 
 public struct AccessToken {
     let token: String
     let expiresAt: Date?
 }
-extension TokenAuth {
-
-    public func parseAccessToken(_ at: String) throws {
-
-        struct Payload: Codable {
-            var exp: Double
-            var iat: Double
-        }
 
 
-        if at.split(separator: ".").count == 3 {
-            let parts = at.split(separator: ".")
-            let s = String(parts[1])
-            if let data = Data(base64Encoded: s) {
-                let payload = try JSONDecoder().decode(Payload.self, from: data)
-                let currentTime = Date().timeIntervalSince1970
+struct AuthState {
+    var accessToken: AccessToken? = nil
+    var refreshToken: String? = nil
 
-                // the difference between currentTime and issuedAt is the time difference between server and us
-                let delta = currentTime - payload.iat
+    var provider: TokenProvider
 
-//                self.accessToken = at
-//                self.accessToken?.expiresAt = Date(timeIntervalSince1970: (payload.exp + delta))
-//
-//                self.apiClient = NetworkClient(
-//                    baseURL: self.serverUrl.appendingPathComponent("sync/\(self.version)/"),
-//                    transport: AddHeaders(base: self.transport, headers: ["Authorization": "Bearer \(self.accessToken!)"])
-//                )
-
-            }
-            else {
-                print("no valid base64: ", s)
-            }
-        }
-        else {
-            print("No valid JWT: ", at)
+    mutating func token(_ completion: (Result<String, Error>) -> Void) {
+        if let access = self.accessToken, (access.expiresAt ?? Date()) < Date() {
+            return completion(.success(access.token))
+        } else if let refresh = self.refreshToken {
+            self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
+                switch result {
+                case let .failure(error): return completion(.failure(error))
+                case let .success(access):
+                    self.accessToken = access
+                    return completion(.success(access.token))
+                }
+            })
+        } else {
+            self.provider.fetchToken(completion: { result in
+                switch result {
+                case let .failure(error): return completion(.failure(error))
+                case let .success(access, refresh):
+                    self.accessToken = access
+                    self.refreshToken = refresh
+                    return completion(.success(access.token))
+                }
+            })
         }
     }
-
-    public func accessCheckThenLoad<Request: NetworkRequest>(_ req: Request, completion: @escaping (Result<Request.ResponseDataType, Error>) -> ()) {
-        var needRefresh = false
-
-        if self.accessToken == nil {
-            needRefresh = true
-        }
-        else {
-//            let renewPointInTime = (self.accessTokenExpiresAt?.timeIntervalSince1970 ?? 0) - 60 // substract a minute to be safe
-//
-//            if (renewPointInTime - Date().timeIntervalSince1970) < 0 {
-//                // now in the timeframe to renew
-//                needRefresh = true
-//            }
-        }
-
-        if needRefresh {
-//            self.refreshAccessToken() { res in
-//                base.send(request: req, completion: completion)
-//            }
-        }
-        else {
-//            base.send(request: req, completion: completion)
-        }
-    }
-
 }
