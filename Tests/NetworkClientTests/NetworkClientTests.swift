@@ -25,13 +25,51 @@ final class NetworkClientTests: XCTestCase {
 
 
         client.load(TestRequest()) { result in
-            guard let response = try? result.get() else {
-                return XCTFail()
+            do {
+                let response = try result.get()
+                XCTAssertEqual(response, "Test")
+            } catch {
+                XCTFail("\(error)")
             }
-            XCTAssertEqual(response, "Test")
         }
 
         XCTAssertEqual(client.baseURL.absoluteString, "https://test.somewhere.com")
     }
 
+    func testTokenAuth() {
+        struct TestRequest: NetworkRequest {
+            func makeRequest(baseURL: URL) throws -> URLRequest { URLRequest(url: baseURL) }
+            func parseResponse(_ data: Data) throws -> String { String(decoding: data, as: UTF8.self) }
+        }
+
+        let accessToken = TestToken(base64: "abc", expiresAt: Date())
+        let refreshToken = TestToken(base64: "def", expiresAt: Date())
+
+        let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
+
+        let responseData = Data("Test".utf8)
+
+        let requestAssertions: (URLRequest) -> Void = {
+            XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
+            XCTAssertEqual($0.allHTTPHeaderFields?["Authorization"], "Bearer abc")
+        }
+
+        let client = NetworkClient(baseURL: URL(string: "https://test.somewhere.com")!, transport:
+            TokenAuth(
+                base: TestTransport(responseData: [responseData], assertRequest: requestAssertions),
+                tokenProvider: tokenProvider
+            )
+        )
+
+        client.load(TestRequest()) { result in
+            do {
+                let response = try result.get()
+                XCTAssertEqual(response, "Test")
+            } catch {
+                XCTFail("\(error)")
+            }
+        }
+
+        XCTAssertEqual(client.baseURL.absoluteString, "https://test.somewhere.com")
+    }
 }
