@@ -85,10 +85,10 @@ public final class NetworkClient {
     let transport: Transport
     let logger: Logger
 
-    public init(baseURL: URL, transport: Transport = URLSession.shared, logger: Logger = Logger(label: "network-client")) {
+    public init(baseURL: URL, transport: Transport = URLSession.shared, logger: Logger? = nil) {
         self.baseURL = baseURL
         self.transport = transport
-        self.logger = logger
+        self.logger = logger ?? Logger(label: "NetworkClient")
     }
 
     // Fetch any APIRequest type, and return its response asynchronously
