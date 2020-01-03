@@ -22,10 +22,10 @@ final class TestTokenProvider: TokenProvider {
 }
 
 struct TestToken: Token {
-    let base64: String
+    let raw: String
     let expiresAt: Date?
-    public init(base64: String, expiresAt: Date?) {
-        self.base64 = base64
+    public init(raw: String, expiresAt: Date?) {
+        self.raw = raw
         self.expiresAt = expiresAt
     }
 }

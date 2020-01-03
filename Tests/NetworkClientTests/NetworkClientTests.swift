@@ -42,8 +42,8 @@ final class NetworkClientTests: XCTestCase {
             func parseResponse(_ data: Data) throws -> String { String(decoding: data, as: UTF8.self) }
         }
 
-        let accessToken = TestToken(base64: "abc", expiresAt: Date())
-        let refreshToken = TestToken(base64: "def", expiresAt: Date())
+        let accessToken = TestToken(raw: "abc", expiresAt: Date())
+        let refreshToken = TestToken(raw: "def", expiresAt: Date())
 
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
 

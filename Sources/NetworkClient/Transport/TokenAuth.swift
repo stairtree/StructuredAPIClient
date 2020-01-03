@@ -33,7 +33,7 @@ public protocol TokenProvider {
 }
 
 public protocol Token {
-    var base64: String { get }
+    var raw: String { get }
     var expiresAt: Date? { get }
 }
 
@@ -49,7 +49,7 @@ final class AuthState {
 
     func token(_ completion: @escaping (Result<String, Error>) -> Void) {
         if let access = self.accessToken, (access.expiresAt ?? Date()) < Date() {
-            return completion(.success(access.base64))
+            return completion(.success(access.raw))
         } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date()) < Date() {
             self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
                 switch result {
@@ -57,7 +57,7 @@ final class AuthState {
                     return completion(.failure(error))
                 case let .success(access):
                     self.accessToken = access
-                    return completion(.success(access.base64))
+                    return completion(.success(access.raw))
                 }
             })
         } else {
@@ -68,7 +68,7 @@ final class AuthState {
                 case let .success(access, refresh):
                     self.accessToken = access
                     self.refreshToken = refresh
-                    return completion(.success(access.base64))
+                    return completion(.success(access.raw))
                 }
             })
         }
