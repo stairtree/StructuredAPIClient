@@ -25,11 +25,11 @@ public final class TokenAuth: Transport {
 }
 
 public protocol TokenProvider {
-    // get access token and refresh token
-    func fetchToken(completion: (Result<(Token, Token), Error>) -> Void)
+    // Get access token and refresh token
+    func fetchToken(completion: @escaping (Result<(Token, Token), Error>) -> Void)
 
-    // refreh the current token
-    func refreshToken(withRefreshToken: Token, completion: (Result<Token, Error>) -> Void)
+    // Refreh the current token
+    func refreshToken(withRefreshToken refreshToken: Token, completion: @escaping (Result<Token, Error>) -> Void)
 }
 
 public protocol Token {
@@ -37,20 +37,24 @@ public protocol Token {
     var expiresAt: Date? { get }
 }
 
-
-struct AuthState {
+final class AuthState {
     var accessToken: Token? = nil
     var refreshToken: Token? = nil
 
-    var provider: TokenProvider
+    let provider: TokenProvider
 
-    mutating func token(_ completion: (Result<String, Error>) -> Void) {
+    internal init(provider: TokenProvider) {
+        self.provider = provider
+    }
+
+    func token(_ completion: @escaping (Result<String, Error>) -> Void) {
         if let access = self.accessToken, (access.expiresAt ?? Date()) < Date() {
             return completion(.success(access.base64))
         } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date()) < Date() {
             self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
                 switch result {
-                case let .failure(error): return completion(.failure(error))
+                case let .failure(error):
+                    return completion(.failure(error))
                 case let .success(access):
                     self.accessToken = access
                     return completion(.success(access.base64))
@@ -59,7 +63,8 @@ struct AuthState {
         } else {
             self.provider.fetchToken(completion: { result in
                 switch result {
-                case let .failure(error): return completion(.failure(error))
+                case let .failure(error):
+                    return completion(.failure(error))
                 case let .success(access, refresh):
                     self.accessToken = access
                     self.refreshToken = refresh
