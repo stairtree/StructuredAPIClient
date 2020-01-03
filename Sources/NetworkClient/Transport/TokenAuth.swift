@@ -26,34 +26,34 @@ public final class TokenAuth: Transport {
 
 public protocol TokenProvider {
     // get access token and refresh token
-    func fetchToken(completion: (Result<(AccessToken, String), Error>) -> Void)
+    func fetchToken(completion: (Result<(Token, Token), Error>) -> Void)
 
     // refreh the current token
-    func refreshToken(withRefreshToken: String, completion: (Result<AccessToken, Error>) -> Void)
+    func refreshToken(withRefreshToken: Token, completion: (Result<Token, Error>) -> Void)
 }
 
-public struct AccessToken {
-    let token: String
-    let expiresAt: Date?
+public protocol Token {
+    var base64: String { get }
+    var expiresAt: Date? { get }
 }
 
 
 struct AuthState {
-    var accessToken: AccessToken? = nil
-    var refreshToken: String? = nil
+    var accessToken: Token? = nil
+    var refreshToken: Token? = nil
 
     var provider: TokenProvider
 
     mutating func token(_ completion: (Result<String, Error>) -> Void) {
         if let access = self.accessToken, (access.expiresAt ?? Date()) < Date() {
-            return completion(.success(access.token))
-        } else if let refresh = self.refreshToken {
+            return completion(.success(access.base64))
+        } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date()) < Date() {
             self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
                 switch result {
                 case let .failure(error): return completion(.failure(error))
                 case let .success(access):
                     self.accessToken = access
-                    return completion(.success(access.token))
+                    return completion(.success(access.base64))
                 }
             })
         } else {
@@ -63,7 +63,7 @@ struct AuthState {
                 case let .success(access, refresh):
                     self.accessToken = access
                     self.refreshToken = refresh
-                    return completion(.success(access.token))
+                    return completion(.success(access.base64))
                 }
             })
         }
