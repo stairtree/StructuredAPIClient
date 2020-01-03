@@ -1,6 +1,7 @@
 // Copyright © 2019 Stairtree GmbH. All rights reserved.
 
 import Foundation
+import Logging
 
 public enum Response {
     case success(Data)
@@ -82,10 +83,12 @@ extension URLSession: Transport {
 public final class NetworkClient {
     public let baseURL: URL
     let transport: Transport
+    let logger: Logger
 
-    public init(baseURL: URL, transport: Transport = URLSession.shared) {
+    public init(baseURL: URL, transport: Transport = URLSession.shared, logger: Logger = Logger(label: "network-client")) {
         self.baseURL = baseURL
         self.transport = transport
+        self.logger = logger
     }
 
     // Fetch any APIRequest type, and return its response asynchronously
@@ -93,6 +96,7 @@ public final class NetworkClient {
         // Construct the URLRequest
         do {
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
+            logger.trace("\(urlRequest.httpMethod.map { "[\($0)] " } ?? "")\(urlRequest.url.map { "\($0) " } ?? "")")
 
             // Send it to the transport
             transport.send(request: urlRequest) { response in
