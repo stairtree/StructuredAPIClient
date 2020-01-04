@@ -127,11 +127,11 @@ extension URLRequest {
 }
 
 func seconds(from: DispatchTime, to: DispatchTime) -> Double {
-    let nanoTime = from.uptimeNanoseconds - to.uptimeNanoseconds
+    let nanoTime = to.uptimeNanoseconds - from.uptimeNanoseconds
     return Double(nanoTime) / 1_000_000_000
 }
 
 func milliseconds(from: DispatchTime, to: DispatchTime) -> Double {
-    let nanoTime = from.uptimeNanoseconds - to.uptimeNanoseconds
+    let nanoTime = to.uptimeNanoseconds - from.uptimeNanoseconds
     return Double(nanoTime) / 1_000_000
 }
