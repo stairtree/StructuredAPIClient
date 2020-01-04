@@ -93,13 +93,17 @@ public final class NetworkClient {
 
     // Fetch any APIRequest type, and return its response asynchronously
     public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping (Result<Request.ResponseDataType, Error>) -> Void) {
+        let start = DispatchTime.now()
         // Construct the URLRequest
         do {
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
-            logger.trace("\(urlRequest.httpMethod.map { "[\($0)] " } ?? "")\(urlRequest.url.map { "\($0) " } ?? "")")
+            logger.trace(Logger.Message(stringLiteral: urlRequest.debugString))
 
             // Send it to the transport
             transport.send(request: urlRequest) { response in
+                // TODO: Deliver a more accurate split of the different phases of the request
+                defer { self.logger.trace("Request '\(urlRequest.debugString)' took \(String(format: "%.4f", milliseconds(from: start, to: .now())))ms") }
+                
                 let result = Result { () throws -> Request.ResponseDataType in
                     switch response {
                     case let .success(data): return try req.parseResponse(data)
@@ -114,4 +118,20 @@ public final class NetworkClient {
             return completion(.failure(error))
         }
     }
+}
+
+extension URLRequest {
+    var debugString: String {
+        "\(httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
+    }
+}
+
+func seconds(from: DispatchTime, to: DispatchTime) -> Double {
+    let nanoTime = from.uptimeNanoseconds - to.uptimeNanoseconds
+    return Double(nanoTime) / 1_000_000_000
+}
+
+func milliseconds(from: DispatchTime, to: DispatchTime) -> Double {
+    let nanoTime = from.uptimeNanoseconds - to.uptimeNanoseconds
+    return Double(nanoTime) / 1_000_000
 }
