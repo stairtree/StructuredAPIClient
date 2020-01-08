@@ -2,6 +2,11 @@ name: test
 on:
 - push
 jobs:
+  macOS:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: swift test --enable-test-discovery --sanitize=thread
   xenial:
     container: 
       image: vapor/swift:5.1-xenial
