@@ -1,6 +1,9 @@
 // Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import XCTest
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import NetworkClient
 
 final class NetworkClientTests: XCTestCase {
