@@ -6,7 +6,7 @@ jobs:
     runs-on: macOS-latest
     strategy:
       matrix:
-        destination: ['platform=iOS Simulator,OS=13.3,name=iPhone 11 Pro', 'platform=iOS Simulator,OS=12.2,name=iPhone SE']
+        destination: ['platform=iOS Simulator,OS=13.2.2,name=iPhone 11 Pro', 'platform=iOS Simulator,OS=12.2,name=iPhone SE']
     steps:
       - name: Checkout
         uses: actions/checkout@master
@@ -22,7 +22,7 @@ jobs:
     - name: Generate xcodeproj
       run: swift package generate-xcodeproj
     - name: Run tvOS tests
-      run: xcodebuild test -scheme NetworkClient-Package -destination 'platform=tvOS Simulator,OS=13.3,name=Apple TV 4K'
+      run: xcodebuild test -scheme NetworkClient-Package -destination 'platform=tvOS Simulator,OS=13.2.2,name=Apple TV 4K'
   macOS:
     runs-on: macOS-latest
     steps:
