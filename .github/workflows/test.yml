@@ -2,22 +2,46 @@ name: test
 on:
 - push
 jobs:
+  iOS:
+    runs-on: macOS-latest
+    strategy:
+      matrix:
+        destination: ['platform=iOS Simulator,OS=13.3,name=iPhone 11 Pro', 'platform=iOS Simulator,OS=12.2,name=iPhone SE']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Generate xcodeproj
+        run: swift package generate-xcodeproj
+      - name: Run tests for ${{ matrix.destination }}
+        run: xcodebuild test -destination '${{ matrix.destination }}'
+  tvOS:
+    runs-on: macOS-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    - name: Generate xcodeproj
+      run: swift package generate-xcodeproj
+    - name: Run tvOS tests
+    - run: xcodebuild test -destination 'platform=tvOS Simulator,OS=13.3,name=Apple TV 4K'
   macOS:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout
+      uses: actions/checkout@master
     - run: swift test --enable-test-discovery --sanitize=thread
   xenial:
     container: 
       image: vapor/swift:5.1-xenial
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout
+      uses: actions/checkout@master
     - run: swift test --enable-test-discovery --sanitize=thread
   bionic:
     container: 
       image: vapor/swift:5.1-bionic
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout
+      uses: actions/checkout@master
     - run: swift test --enable-test-discovery --sanitize=thread
