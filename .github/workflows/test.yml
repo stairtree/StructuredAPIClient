@@ -22,13 +22,14 @@ jobs:
     - name: Generate xcodeproj
       run: swift package generate-xcodeproj
     - name: Run tvOS tests
-    - run: xcodebuild test -destination 'platform=tvOS Simulator,OS=13.3,name=Apple TV 4K'
+      run: xcodebuild test -destination 'platform=tvOS Simulator,OS=13.3,name=Apple TV 4K'
   macOS:
     runs-on: macOS-latest
     steps:
     - name: Checkout
       uses: actions/checkout@master
-    - run: swift test --enable-test-discovery --sanitize=thread
+    - name: Run tests
+      run: swift test --enable-test-discovery --sanitize=thread
   xenial:
     container: 
       image: vapor/swift:5.1-xenial
@@ -36,7 +37,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
-    - run: swift test --enable-test-discovery --sanitize=thread
+    - name: Run tests
+      run: swift test --enable-test-discovery --sanitize=thread
   bionic:
     container: 
       image: vapor/swift:5.1-bionic
@@ -44,4 +46,5 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
-    - run: swift test --enable-test-discovery --sanitize=thread
+    - name: Run tests
+      run: swift test --enable-test-discovery --sanitize=thread
