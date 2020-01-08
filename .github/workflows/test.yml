@@ -13,7 +13,7 @@ jobs:
       - name: Generate xcodeproj
         run: swift package generate-xcodeproj
       - name: Run tests for ${{ matrix.destination }}
-        run: xcodebuild test -destination '${{ matrix.destination }}'
+        run: xcodebuild test -scheme NetworkClient-Package -destination '${{ matrix.destination }}'
   tvOS:
     runs-on: macOS-latest
     steps:
@@ -22,7 +22,7 @@ jobs:
     - name: Generate xcodeproj
       run: swift package generate-xcodeproj
     - name: Run tvOS tests
-      run: xcodebuild test -destination 'platform=tvOS Simulator,OS=13.3,name=Apple TV 4K'
+      run: xcodebuild test -scheme NetworkClient-Package -destination 'platform=tvOS Simulator,OS=13.3,name=Apple TV 4K'
   macOS:
     runs-on: macOS-latest
     steps:
