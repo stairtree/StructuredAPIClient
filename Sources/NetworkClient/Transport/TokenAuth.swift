@@ -1,6 +1,9 @@
 // Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Logging
 
 // Handle token auth and add headers to an existing transport

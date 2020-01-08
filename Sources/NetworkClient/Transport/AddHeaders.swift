@@ -1,7 +1,9 @@
 // Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import Foundation
-
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Add headers to an existing `Transport`.
 public final class AddHeaders: Transport {

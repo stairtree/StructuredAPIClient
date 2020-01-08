@@ -1,7 +1,10 @@
 // Copyright © 2020 Stairtree GmbH. All rights reserved.
 
-import NetworkClient
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+import NetworkClient
 
 enum TestTransportError: Swift.Error { case tooManyRequests }
 
