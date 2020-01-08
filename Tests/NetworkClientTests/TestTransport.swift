@@ -1,11 +1,11 @@
-// Copyright © 2019 Stairtree GmbH. All rights reserved.
+// Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import NetworkClient
 import Foundation
 
-// A transport that returns static values for tests
 enum TestTransportError: Swift.Error { case tooManyRequests }
 
+// A `Transport` that synchronously returns static values for tests
 final class TestTransport: Transport {
     var history: [URLRequest] = []
     var responseData: [Data]

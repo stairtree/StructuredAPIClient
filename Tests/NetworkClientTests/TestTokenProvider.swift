@@ -3,6 +3,8 @@
 import Foundation
 import NetworkClient
 
+
+/// A `TokenProvider` that returns a given accessToken and refreshToken for the respective requests.
 final class TestTokenProvider: TokenProvider {
     let accessToken: Token
     let refreshToken: Token
@@ -21,6 +23,7 @@ final class TestTokenProvider: TokenProvider {
     }
 }
 
+/// A sample `Token` that contains the raw String and an expiry date.
 struct TestToken: Token {
     let raw: String
     let expiresAt: Date?

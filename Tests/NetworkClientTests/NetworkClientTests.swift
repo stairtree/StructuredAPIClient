@@ -1,3 +1,5 @@
+// Copyright © 2020 Stairtree GmbH. All rights reserved.
+
 import XCTest
 import NetworkClient
 

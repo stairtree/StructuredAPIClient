@@ -1,11 +1,24 @@
-// Copyright © 2019 Stairtree GmbH. All rights reserved.
+// Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import Foundation
 
-// Add headers to an existing transport
+
+/// Add headers to an existing `Transport`.
 public final class AddHeaders: Transport {
+    
+    /// The base `Transport` to extend with extra headers
     private let base: Transport
-    var headers: [String: String]
+    
+    /// Additional headers that will be applied to the request upon sending.
+    private let headers: [String: String]
+
+    
+    /// Create a `Transport` that adds headers to the base `Transport`
+    /// - Parameters:
+    ///   - base: The base `Transport` that will have the headers applied
+    ///   - headers: Headers to apply to the base `Transport`
+    ///
+    /// - Note: Existing headers with the same keys will be overwritten
 
     public init(base: Transport, headers: [String: String]) {
         self.base = base

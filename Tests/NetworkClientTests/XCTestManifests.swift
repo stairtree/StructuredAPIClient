@@ -7,6 +7,7 @@ extension NetworkClientTests {
     // to regenerate.
     static let __allTests__NetworkClientTests = [
         ("testNetworkClient", testNetworkClient),
+        ("testStackingHeaders", testStackingHeaders),
         ("testTokenAuth", testTokenAuth),
     ]
 }

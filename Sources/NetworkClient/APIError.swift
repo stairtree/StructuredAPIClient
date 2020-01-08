@@ -1,8 +1,9 @@
-// Copyright © 2019 Stairtree GmbH. All rights reserved.
+// Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import Foundation
 
 
+/// Errors emitted by the `NetworkClient`
 public enum APIError: Error {
     case badRequest
     case unauthorized

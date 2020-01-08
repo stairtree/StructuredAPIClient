@@ -1,82 +1,55 @@
-// Copyright © 2019 Stairtree GmbH. All rights reserved.
+// Copyright © 2020 Stairtree GmbH. All rights reserved.
 
 import Foundation
 import Logging
 
+
+/// A `Transport`'s response
 public enum Response {
+    /// Indicates a successful request
     case success(Data)
+    /// A successful request but the response indicates an application-specific error with non-`2xx` HTTP response code.
     case failure(Data)
+    /// An unsuccessful request
     case error(Error)
 }
 
-// A transport maps a URLRequest to Data, asynchronously
+/// A `Transport` maps a URLRequest to Data, asynchronously.
 public protocol Transport {
-    func send(request: URLRequest, completion: @escaping (Response) -> Void)
+    
+    /// Sends the request and delivers the response asynchronously.
+    /// - Parameters:
+    ///   - request: The request to be sent.
+    ///   - completion: The completion handler that is called after the response is received.
+    ///   - response: The received response from the server.
+    func send(request: URLRequest, completion: @escaping (_ response: Response) -> Void)
 }
 
-public protocol NetworkRequest {
-    associatedtype ResponseDataType
 
+/// Any request that can be sent as a `URLRequest` with a `NetworkClient`, and returns a response.
+public protocol NetworkRequest {
+    /// The decoded data type that represents the response.
+    associatedtype ResponseDataType
+    
+    /// Returns a request based on the given base URL.
+    /// - Parameter baseURL: The `NetworkClient`'s base URL.
     func makeRequest(baseURL: URL) throws -> URLRequest
+    
+    /// Handles the returned data from the response and returns the associated data type
+    /// - Parameter data: The data received in the response
     func parseResponse(_ data: Data) throws -> ResponseDataType
+    
+    /// Handles an application specific error that is received in a successfult request with a response code outside `200..<300`.
+    /// - Parameter data: The data received in the response.
     func parseError(_ data: Data) throws -> Error
 }
 
 extension NetworkRequest {
+    
+    /// Default implementation that returns an `APIError.invalidResponse`.
+    /// - Parameter data: The data received in the response.
     public func parseError(_ data: Data) throws -> Error {
         return APIError.invalidResponse
-    }
-}
-
-extension URLSession: Transport {
-    public func send(request: URLRequest, completion: @escaping (Response) -> Void)
-    {
-        let task = self.dataTask(with: request) { (data, response, error) in
-            guard let response = response as? HTTPURLResponse else {
-                if
-                    let error = error as NSError?,
-                    error.code == NSURLErrorCannotConnectToHost ||
-                    error.code == NSURLErrorTimedOut
-                {
-                    return completion(.error(APIError.serverUnreachable))
-                } else {
-                    return completion(.error(APIError.invalidResponse))
-                }
-            }
-
-            if let error = error {
-                switch (error as NSError).code {
-                case NSURLErrorNotConnectedToInternet,
-                     NSURLErrorInternationalRoamingOff,
-                     NSURLErrorSecureConnectionFailed,
-                     NSURLErrorNetworkConnectionLost,
-                     NSURLErrorCancelled:
-                    return completion(.error(APIError.network))
-                default:
-                    return completion(.error(error))
-                }
-            }
-
-            switch response.statusCode {
-            case 400: return completion(.error(APIError.badRequest))
-            case 401: return completion(.error(APIError.unauthorized))
-            case 403: return completion(.error(APIError.forbidden))
-            case 404: return completion(.error(APIError.notFound))
-            case 405: return completion(.error(APIError.methodNotAllowed))
-            default: break
-            }
-
-            guard 200..<300 ~= response.statusCode else {
-                if let data = data {
-                    return completion(.failure(data))
-                } else {
-                    return completion(.error(APIError.invalidResponse))
-                }
-            }
-            
-            return completion(.success(data ?? Data()))
-        }
-        task.resume()
     }
 }
 
@@ -91,7 +64,7 @@ public final class NetworkClient {
         self.logger = logger ?? Logger(label: "NetworkClient")
     }
 
-    // Fetch any APIRequest type, and return its response asynchronously
+    // Fetch any `NetworkRequest` type, and return its response asynchronously
     public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping (Result<Request.ResponseDataType, Error>) -> Void) {
         let start = DispatchTime.now()
         // Construct the URLRequest
@@ -117,12 +90,6 @@ public final class NetworkClient {
         } catch {
             return completion(.failure(error))
         }
-    }
-}
-
-extension URLRequest {
-    var debugString: String {
-        "\(httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
     }
 }
 

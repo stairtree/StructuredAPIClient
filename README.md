@@ -1,3 +1,3 @@
 # NetworkClient
 
-A description of this package.
+A testable and composable network client.

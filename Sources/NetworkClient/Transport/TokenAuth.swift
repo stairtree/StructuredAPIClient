@@ -8,7 +8,7 @@ public final class TokenAuth: Transport {
     private let base: Transport
     private let logger: Logger
 
-    let auth: AuthState
+    private let auth: AuthState
 
     public init(base: Transport, tokenProvider: TokenProvider, logger: Logger? = nil) {
         self.base = base
