@@ -1,0 +1,15 @@
+name: Swift
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: swift build --enable-test-discovery -v
+    - name: Run tests
+      run: swift test --enable-test-discovery -v
