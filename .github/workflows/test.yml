@@ -1,6 +1,6 @@
 name: test
 on:
-- commit
+- push
 jobs:
   xenial:
     container: 
