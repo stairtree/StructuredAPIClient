@@ -1,15 +1,18 @@
-name: Swift
-
-on: [push]
-
+name: test
+on:
+- pull_request
 jobs:
-  build:
-
-    runs-on: ubuntu-18.04
-
+  xenial:
+    container: 
+      image: vapor/swift:5.1-xenial
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Build
-      run: swift build --enable-test-discovery -v
-    - name: Run tests
-      run: swift test --enable-test-discovery -v
+    - run: swift test --enable-test-discovery --sanitize=thread
+  bionic:
+    container: 
+      image: vapor/swift:5.1-bionic
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: swift test --enable-test-discovery --sanitize=thread
