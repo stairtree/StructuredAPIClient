@@ -11,4 +11,29 @@
 </a>
 
 
-A testable and composable network client inspired by blog posts by [Rob Napier](https://robnapier.net) and [Soroush Khanlou](http://khanlou.com), as well as the [Testing Tips & Tricks](https://developer.apple.com/videos/play/wwdc2018/417/) WWDC talk. 
+A testable and composable network client.
+
+### Supported Platforms
+
+NetworkClient is tested on macOS, iOS, tvOS and Linux, and is known to support the following operating system versions:
+
+* Ubuntu 16.04+
+* macOS 10.12+
+* iOS 12+
+* tvOS 12+
+* watchOS (untested since watchOS doesn't support `XCTest`)
+
+
+To integrate the package:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/stairtree/NetworkClient.git", .branch("master"))
+]
+```
+
+*Note, that no release has been tagged yet.*
+
+---
+
+Inspired by blog posts by [Rob Napier](https://robnapier.net) and [Soroush Khanlou](http://khanlou.com), as well as the [Testing Tips & Tricks](https://developer.apple.com/videos/play/wwdc2018/417/) WWDC talk. 
