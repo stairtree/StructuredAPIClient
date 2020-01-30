@@ -23,7 +23,7 @@ public final class TokenAuth: Transport {
         self.auth.token { result in
             switch result {
             case let .failure(error):
-                completion(.error(error))
+                completion(.error(.unknown(error)))
             case let .success(token):
                 let headers = ["Authorization": "Bearer \(token)"]
                 let transport = AddHeaders(base: self.base, headers: headers)

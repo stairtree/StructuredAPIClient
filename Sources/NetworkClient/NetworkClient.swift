@@ -12,9 +12,9 @@ public enum Response {
     /// Indicates a successful request
     case success(Data)
     /// A successful request but the response indicates an application-specific error with non-`2xx` HTTP response code.
-    case failure(Data)
+    case failure(status: APIError.Status, body: Data)
     /// An unsuccessful request
-    case error(Error)
+    case error(APIError.TransportFailure)
 }
 
 /// A `Transport` maps a URLRequest to Data, asynchronously.
@@ -43,16 +43,18 @@ public protocol NetworkRequest {
     func parseResponse(_ data: Data) throws -> ResponseDataType
     
     /// Handles an application specific error that is received in a successfult request with a response code outside `200..<300`.
-    /// - Parameter data: The data received in the response.
-    func parseError(_ data: Data) throws -> Error
+    /// - Parameters
+    ///   - data: The data received in the response.
+    ///   - status: The HTTP status for the response.
+    func parseError(_ data: Data, for status: APIError.Status) throws -> Error
 }
 
 extension NetworkRequest {
     
     /// Default implementation that returns an `APIError.invalidResponse`.
     /// - Parameter data: The data received in the response.
-    public func parseError(_ data: Data) throws -> Error {
-        return APIError.invalidResponse
+    public func parseError(_ data: Data, for status: APIError.Status) throws -> Error {
+        return APIError.transport(.invalidResponse)
     }
 }
 
@@ -83,8 +85,8 @@ public final class NetworkClient {
                 let result = Result { () throws -> Request.ResponseDataType in
                     switch response {
                     case let .success(data): return try req.parseResponse(data)
-                    case let .failure(data): throw try req.parseError(data)
-                    case let .error(error): throw error
+                    case let .failure(status, data): throw try req.parseError(data, for: status)
+                    case let .error(error): throw APIError.transport(error)
                     }
                 }
 

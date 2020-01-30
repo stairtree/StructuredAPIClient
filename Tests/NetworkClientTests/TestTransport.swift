@@ -6,8 +6,6 @@ import FoundationNetworking
 #endif
 import NetworkClient
 
-enum TestTransportError: Swift.Error { case tooManyRequests }
-
 // A `Transport` that synchronously returns static values for tests
 final class TestTransport: Transport {
     var history: [URLRequest] = []
@@ -25,7 +23,7 @@ final class TestTransport: Transport {
         if !responseData.isEmpty {
             completion(.success(responseData.removeFirst()))
         } else {
-            completion(.error(TestTransportError.tooManyRequests))
+            completion(.failure(status: .tooManyRequests, body: Data()))
         }
     }
 }
