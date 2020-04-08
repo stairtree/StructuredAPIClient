@@ -9,12 +9,15 @@ public enum APIError: Error {
 
 extension APIError {
     public enum TransportFailure {
-        case invalidResponse
-        case invalidData
-        case parsingError
-        case network
-        case serverUnreachable
+        case invalidResponse(ResponseFailure)
+        case network(errorCode: Int)
+        case serverUnreachable(errorCode: Int)
         case unknown(Error)
+
+        public enum ResponseFailure {
+            case nonHTTPResponse
+            case invalidStatusCode(Int, HTTPURLResponse)
+        }
     }
 
     /// Errors emitted by the `NetworkClient`

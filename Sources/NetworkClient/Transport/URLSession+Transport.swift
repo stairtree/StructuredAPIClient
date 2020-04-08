@@ -21,9 +21,9 @@ extension URLSession: Transport {
                     error.code == NSURLErrorCannotConnectToHost ||
                     error.code == NSURLErrorTimedOut
                 {
-                    return completion(.error(.serverUnreachable))
+                    return completion(.error(.serverUnreachable(errorCode: error.code)))
                 } else {
-                    return completion(.error(.invalidResponse))
+                    return completion(.error(.invalidResponse(.nonHTTPResponse)))
                 }
             }
 
@@ -34,7 +34,7 @@ extension URLSession: Transport {
                      NSURLErrorSecureConnectionFailed,
                      NSURLErrorNetworkConnectionLost,
                      NSURLErrorCancelled:
-                    return completion(.error(.network))
+                    return completion(.error(.network(errorCode: (error as NSError).code)))
                 default:
                     return completion(.error(.unknown(error)))
                 }
@@ -44,7 +44,7 @@ extension URLSession: Transport {
                 if let data = data, let status = APIError.Status(code: response.statusCode) {
                     return completion(.failure(status: status, body: data))
                 } else {
-                    return completion(.error(.invalidResponse))
+                    return completion(.error(.invalidResponse(.invalidStatusCode(response.statusCode, response))))
                 }
             }
             

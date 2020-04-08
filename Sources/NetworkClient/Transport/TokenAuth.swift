@@ -78,7 +78,7 @@ final class AuthState {
                 switch result {
                 case let .failure(error):
                     return completion(.failure(error))
-                case let .success(access, refresh):
+                case let .success((access, refresh)):
                     self.accessToken = access
                     self.refreshToken = refresh
                     return completion(.success(access.raw))
