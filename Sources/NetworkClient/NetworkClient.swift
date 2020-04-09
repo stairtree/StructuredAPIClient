@@ -51,7 +51,7 @@ public protocol NetworkRequest {
 
 extension NetworkRequest {
     
-    /// Default implementation that returns an `APIError.invalidResponse`.
+    /// Default implementation that returns an `APIError.api`.
     /// - Parameter data: The data received in the response.
     public func parseError(_ data: Data, for status: APIError.Status) throws -> Error {
         return APIError.api(status: status, body: data)
