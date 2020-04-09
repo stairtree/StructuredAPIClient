@@ -9,7 +9,7 @@ public enum APIError: Error {
 
 extension APIError {
     public enum TransportFailure {
-        case invalidRequest(basURL: URL, components: URLComponents?)
+        case invalidRequest(baseURL: URL, components: URLComponents?)
         case invalidResponse(ResponseFailure)
         case network(errorCode: Int)
         case serverUnreachable(errorCode: Int)
