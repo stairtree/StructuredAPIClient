@@ -1,4 +1,4 @@
-// Copyright © 2020 Stairtree GmbH. All rights reserved.
+// Copyright © Stairtree GmbH. All rights reserved.
 
 import Foundation
 #if canImport(FoundationNetworking)

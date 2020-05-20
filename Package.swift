@@ -1,13 +1,10 @@
-// swift-tools-version:5.1
-
+// swift-tools-version:5.2
 import PackageDescription
 
 let package = Package(
     name: "NetworkClient",
     products: [
-        .library(
-            name: "NetworkClient",
-            targets: ["NetworkClient"]),
+        .library(name: "NetworkClient", targets: ["NetworkClient"]),
     ],
     dependencies: [
         // Swift logging API
@@ -16,9 +13,9 @@ let package = Package(
     targets: [
         .target(
             name: "NetworkClient",
-            dependencies: ["Logging"]),
+            dependencies: [.product(name: "Logging", package: "swift-log")]),
         .testTarget(
             name: "NetworkClientTests",
-            dependencies: ["NetworkClient"]),
+            dependencies: [.target(name: "NetworkClient")]),
     ]
 )

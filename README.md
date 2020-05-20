@@ -4,7 +4,7 @@
     <img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT License">
 </a>
 <a href="https://swift.org">
-    <img src="https://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1">
+    <img src="https://img.shields.io/badge/swift-5.2-brightgreen.svg" alt="Swift 5.2">
 </a>
 <a href="https://github.com/stairtree/NetworkClient/actions">
     <img src="https://github.com/stairtree/NetworkClient/workflows/test/badge.svg" alt="CI">

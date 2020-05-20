@@ -1,4 +1,4 @@
-// Copyright © 2020 Stairtree GmbH. All rights reserved.
+// Copyright © Stairtree GmbH. All rights reserved.
 
 import XCTest
 #if canImport(FoundationNetworking)
