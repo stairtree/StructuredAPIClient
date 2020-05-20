@@ -12,39 +12,23 @@ extension URLSession: Transport {
     ///   - request: The configured request to send
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
-    public func send(request: URLRequest, completion: @escaping (Response) -> Void)
-    {
+    public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
         let task = self.dataTask(with: request) { (data, response, error) in
-            guard let response = response as? HTTPURLResponse else {
-                if
-                    let error = error as NSError?,
-                    error.code == NSURLErrorCannotConnectToHost ||
-                    error.code == NSURLErrorTimedOut
-                {
-                    return completion(.error(.serverUnreachable(errorCode: error.code)))
-                } else {
-                    return completion(.error(.invalidResponse(.nonHTTPResponse)))
-                }
+            switch error.map({ $0 as? URLError }) {
+                case .some(.some(let netError)) where netError.code == .cancelled: return completion(.error(.cancelled))
+                case .some(.some(let netError)): return completion(.error(.network(netError)))
+                case .some(.none): return completion(.error(.unknown(error!)))
+                default: break // no error
             }
-
-            if let error = error {
-                switch (error as NSError).code {
-                case NSURLErrorNotConnectedToInternet,
-                     NSURLErrorInternationalRoamingOff,
-                     NSURLErrorSecureConnectionFailed,
-                     NSURLErrorNetworkConnectionLost,
-                     NSURLErrorCancelled:
-                    return completion(.error(.network(errorCode: (error as NSError).code)))
-                default:
-                    return completion(.error(.unknown(error)))
-                }
+            guard let response = response! as? HTTPURLResponse else {
+                return completion(.error(.network(URLError(.unsupportedURL))))
             }
-
+            
             guard 200..<300 ~= response.statusCode else {
                 if let data = data, let status = APIError.Status(code: response.statusCode) {
                     return completion(.failure(status: status, body: data))
                 } else {
-                    return completion(.error(.invalidResponse(.invalidStatusCode(response.statusCode, response))))
+                    return completion(.error(.network(.init(.cannotParseResponse))))
                 }
             }
             

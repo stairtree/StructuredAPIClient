@@ -5,27 +5,31 @@ import Foundation
 import FoundationNetworking
 #endif
 
-public enum APIError: Error {
+public enum APIError: Error, Equatable {
     case transport(TransportFailure)
     case api(status: Status, body: Data)
 }
 
 extension APIError {
-    public enum TransportFailure {
+    public enum TransportFailure: Equatable {
         case invalidRequest(baseURL: URL, components: URLComponents?)
-        case invalidResponse(ResponseFailure)
-        case network(errorCode: Int)
-        case serverUnreachable(errorCode: Int)
+        case network(URLError)
+        case cancelled
         case unknown(Error)
-
-        public enum ResponseFailure {
-            case nonHTTPResponse
-            case invalidStatusCode(Int, HTTPURLResponse)
+        
+        public static func ==(lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+                case let (.invalidRequest(lurl, lcomp), .invalidRequest(rurl, rcomp)): return lurl == rurl && lcomp == rcomp
+                case let (.network(lerror), .network(rerror)): return lerror == rerror
+                case     (.cancelled, .cancelled): return true
+                case let (.unknown(lerror), .unknown(rerror)): return (lerror as NSError) == (rerror as NSError)
+                default: return false
+            }
         }
     }
 
-    /// Errors emitted by the `NetworkClient`
-    public enum Status: UInt {
+    /// HTTP status codes currently recognized by `NetworkClient`
+    public enum Status: UInt, Equatable, CaseIterable {
         // 1xx information
         case `continue` = 100
         case switchingProtocols = 101
