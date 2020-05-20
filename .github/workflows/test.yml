@@ -1,50 +1,33 @@
 name: test
-on:
-- push
+on: [ push ]
 jobs:
-  iOS:
-    runs-on: macOS-latest
+  appleos:
+    runs-on: macos-latest
     strategy:
       matrix:
-        destination: ['platform=iOS Simulator,OS=latest,name=iPhone 11 Pro']
+        destination:
+        - 'platform=macOS,arch=x86_64'
+        - 'platform=iOS Simulator,OS=latest,name=iPhone 11 Pro'
+        - 'platform=tvOS Simulator,OS=latest,name=Apple TV 4K'
     steps:
-      - name: Checkout
-        uses: actions/checkout@master
-      - name: Generate xcodeproj
-        run: swift package generate-xcodeproj
-      - name: Run tests for ${{ matrix.destination }}
-        run: xcodebuild test -scheme NetworkClient-Package -destination '${{ matrix.destination }}'
-  tvOS:
-    runs-on: macOS-latest
-    steps:
+    - name: Select latest available Xcode
+      uses: maxim-lobanov/setup-xcode@1.0
+      with: { 'xcode-version': 'latest' }
     - name: Checkout
-      uses: actions/checkout@master
-    - name: Generate xcodeproj
-      run: swift package generate-xcodeproj
-    - name: Run tvOS tests
-      run: xcodebuild test -scheme NetworkClient-Package -destination 'platform=tvOS Simulator,OS=latest,name=Apple TV 4K'
-  macOS:
-    runs-on: macOS-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Run tests
-      run: swift test --enable-test-discovery --sanitize=thread
-  xenial:
-    container: 
-      image: vapor/swift:5.1-xenial
+      uses: actions/checkout@v2
+    - name: Run tests for ${{ matrix.destination }}
+      run: xcodebuild test -scheme NetworkClient -enableThreadSanitizer YES -destination '${{ matrix.destination }}'
+  linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runner:
+        - xenial
+        - bionic
+    container:
+      image: swift:${{ matrix.runner }}
     steps:
     - name: Checkout
-      uses: actions/checkout@master
-    - name: Run tests
-      run: swift test --enable-test-discovery --sanitize=thread
-  bionic:
-    container: 
-      image: vapor/swift:5.1-bionic
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Run tests
+      uses: actions/checkout@v2
+    - name: Run tests for ${{ matrix.runner }}
       run: swift test --enable-test-discovery --sanitize=thread
