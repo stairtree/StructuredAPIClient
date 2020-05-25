@@ -42,7 +42,7 @@ public protocol NetworkRequest {
     /// - Parameter data: The data received in the response
     func parseResponse(_ data: Data) throws -> ResponseDataType
     
-    /// Handles an application specific error that is received in a successfult request with a response code outside `200..<300`.
+    /// Handles an application specific error that is received in a successful request with a response code outside `200..<300`.
     /// - Parameters
     ///   - data: The data received in the response.
     ///   - status: The HTTP status for the response.
