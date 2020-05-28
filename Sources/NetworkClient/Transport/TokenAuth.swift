@@ -13,10 +13,10 @@ public final class TokenAuth: Transport {
 
     private let auth: AuthState
 
-    public init(base: Transport, tokenProvider: TokenProvider, logger: Logger? = nil) {
+    public init(base: Transport, accessToken: Token? = nil, refreshToken: Token? = nil, tokenProvider: TokenProvider, logger: Logger? = nil) {
         self.base = base
         self.logger = logger ?? Logger(label: "TokenAuth")
-        self.auth = AuthState(provider: tokenProvider, logger: logger)
+        self.auth = AuthState(accessToken: accessToken, refreshToken: refreshToken, provider: tokenProvider, logger: logger)
     }
 
     public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
@@ -53,15 +53,17 @@ final class AuthState {
     let provider: TokenProvider
     let logger: Logger
 
-    internal init(provider: TokenProvider, logger: Logger? = nil) {
+    internal init(accessToken: Token? = nil, refreshToken: Token? = nil, provider: TokenProvider, logger: Logger? = nil) {
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
         self.provider = provider
         self.logger = logger ?? Logger(label: "AuthState")
     }
 
     func token(_ completion: @escaping (Result<String, Error>) -> Void) {
-        if let access = self.accessToken, (access.expiresAt ?? Date()) < Date() {
+        if let access = self.accessToken, (access.expiresAt ?? Date()) > Date() {
             return completion(.success(access.raw))
-        } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date()) < Date() {
+        } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date()) > Date() {
             logger.trace("Refreshing token")
             self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
                 switch result {
