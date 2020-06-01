@@ -61,9 +61,9 @@ final class AuthState {
     }
 
     func token(_ completion: @escaping (Result<String, Error>) -> Void) {
-        if let access = self.accessToken, (access.expiresAt ?? Date()) > Date() {
+        if let access = self.accessToken, (access.expiresAt ?? Date.distantFuture) > Date() {
             return completion(.success(access.raw))
-        } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date()) > Date() {
+        } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date.distantFuture) > Date() {
             logger.trace("Refreshing token")
             self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
                 switch result {
