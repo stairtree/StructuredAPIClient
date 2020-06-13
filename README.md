@@ -28,7 +28,7 @@ To integrate the package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/stairtree/NetworkClient.git", .branch("master"))
+    .package(url: "https://github.com/stairtree/NetworkClient.git", .branch("main"))
 ]
 ```
 
