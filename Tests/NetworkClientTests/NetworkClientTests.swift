@@ -1,4 +1,15 @@
-// Copyright © Stairtree GmbH. All rights reserved.
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Network Client open source project
+//
+// Copyright (c) Stairtree GmbH
+// Licensed under the MIT license
+//
+// See LICENSE.txt for license information
+//
+// SPDX-License-Identifier: MIT
+//
+//===----------------------------------------------------------------------===//
 
 import XCTest
 #if canImport(FoundationNetworking)
