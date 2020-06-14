@@ -32,7 +32,7 @@ dependencies: [
 ]
 ```
 
-*Note, that no release has been tagged yet.*
+_**Note**: No releases have yet been tagged._
 
 ---
 
