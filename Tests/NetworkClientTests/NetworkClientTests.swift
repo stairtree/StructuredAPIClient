@@ -31,13 +31,13 @@ final class NetworkClientTests: XCTestCase {
             }
         }
 
-        let responseData = Data("Test".utf8)
+        let response: Response = .success(Data("Test".utf8))
 
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
         }
 
-        let client = NetworkClient(baseURL: URL(string: "https://test.somewhere.com")!, transport: TestTransport(responseData: [responseData], assertRequest: requestAssertions))
+        let client = NetworkClient(baseURL: URL(string: "https://test.somewhere.com")!, transport: TestTransport(responses: [response], assertRequest: requestAssertions))
 
 
         client.load(TestRequest()) { result in
@@ -63,7 +63,7 @@ final class NetworkClientTests: XCTestCase {
 
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
 
-        let responseData = Data("Test".utf8)
+        let response: Response = .success(Data("Test".utf8))
 
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
@@ -72,7 +72,7 @@ final class NetworkClientTests: XCTestCase {
 
         let client = NetworkClient(baseURL: URL(string: "https://test.somewhere.com")!, transport:
             TokenAuth(
-                base: TestTransport(responseData: [responseData], assertRequest: requestAssertions),
+                base: TestTransport(responses: [response], assertRequest: requestAssertions),
                 tokenProvider: tokenProvider
             )
         )
@@ -100,7 +100,7 @@ final class NetworkClientTests: XCTestCase {
             }
         }
 
-        let responseData = Data("Test".utf8)
+        let response: Response = .success(Data("Test".utf8))
 
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
@@ -108,7 +108,7 @@ final class NetworkClientTests: XCTestCase {
             XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
         }
 
-        let base = TestTransport(responseData: [responseData], assertRequest: requestAssertions)
+        let base = TestTransport(responses: [response], assertRequest: requestAssertions)
         let h1 = AddHeaders(base: base, headers: ["H1": "1"])
         let h2 = AddHeaders(base: h1, headers: ["H2": "2"])
         

@@ -20,19 +20,19 @@ import NetworkClient
 // A `Transport` that synchronously returns static values for tests
 final class TestTransport: Transport {
     var history: [URLRequest] = []
-    var responseData: [Data]
+    var responses: [Response]
     var assertRequest: (URLRequest) -> Void
 
-    init(responseData: [Data], assertRequest: @escaping (URLRequest) -> Void = { _ in }) {
-        self.responseData = responseData
+    init(responses: [Response], assertRequest: @escaping (URLRequest) -> Void = { _ in }) {
+        self.responses = responses
         self.assertRequest = assertRequest
     }
 
     func send(request: URLRequest, completion: @escaping (Response) -> Void) {
         assertRequest(request)
         history.append(request)
-        if !responseData.isEmpty {
-            completion(.success(responseData.removeFirst()))
+        if !responses.isEmpty {
+            completion(responses.removeFirst())
         } else {
             completion(.failure(status: .tooManyRequests, body: Data()))
         }
