@@ -1,6 +1,8 @@
 name: test
 on:
-  push: {}
+  push:
+    branches:
+      - main
   pull_request: {}
 
 jobs:
@@ -43,7 +45,7 @@ jobs:
           - xenial
           - bionic
           - focal
-          - centos7
+          #- centos7
           - centos8
           - amazonlinux2
     container:
