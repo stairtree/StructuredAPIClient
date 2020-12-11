@@ -21,7 +21,7 @@ let package = Package(
     ],
     dependencies: [
         // Swift logging API
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.1.0"),
+        .package(url: "https://github.com/apple/swift-log.git", .branch("main")),
     ],
     targets: [
         .target(
