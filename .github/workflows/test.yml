@@ -8,6 +8,7 @@ on:
 jobs:
   appleos:
     strategy:
+      fail-fast: false
       matrix:
         xcode:
           - latest
@@ -37,6 +38,7 @@ jobs:
   linux:
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
         ver:
           - 5.2
