@@ -15,14 +15,14 @@ A testable and composable network client.
 
 ### Supported Platforms
 
-NetworkClient is tested on macOS, iOS, tvOS and Linux, and is known to support the following operating system versions:
+NetworkClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is known to support the following operating system versions:
 
 * Ubuntu 16.04+
 * macOS 10.12+
 * iOS 12+
 * tvOS 12+
 * watchOS (untested since watchOS doesn't support `XCTest`)
-
+* Windows 10 (using the latest Swift development snapshot)
 
 To integrate the package:
 
