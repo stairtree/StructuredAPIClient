@@ -33,7 +33,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Run tests for ${{ matrix.platform.destination }}
-      run: xcodebuild test -scheme NetworkClient -enableThreadSanitizer YES -destination '${{ matrix.platform.destination }}'
+      run: xcodebuild test -scheme NetworkClient-Package -enableThreadSanitizer YES -destination '${{ matrix.platform.destination }}'
   
   linux:
     runs-on: ubuntu-20.04

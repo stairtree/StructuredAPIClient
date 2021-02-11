@@ -16,6 +16,7 @@ import XCTest
 import FoundationNetworking
 #endif
 import NetworkClient
+import NetworkClientTestSupport
 
 final class NetworkClientTests: XCTestCase {
 

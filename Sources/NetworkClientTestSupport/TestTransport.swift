@@ -18,17 +18,17 @@ import FoundationNetworking
 import NetworkClient
 
 // A `Transport` that synchronously returns static values for tests
-final class TestTransport: Transport {
+public final class TestTransport: Transport {
     var history: [URLRequest] = []
     var responses: [Response]
     var assertRequest: (URLRequest) -> Void
 
-    init(responses: [Response], assertRequest: @escaping (URLRequest) -> Void = { _ in }) {
+    public init(responses: [Response], assertRequest: @escaping (URLRequest) -> Void = { _ in }) {
         self.responses = responses
         self.assertRequest = assertRequest
     }
 
-    func send(request: URLRequest, completion: @escaping (Response) -> Void) {
+    public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
         assertRequest(request)
         history.append(request)
         if !responses.isEmpty {

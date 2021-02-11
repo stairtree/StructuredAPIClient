@@ -18,6 +18,7 @@ let package = Package(
     name: "NetworkClient",
     products: [
         .library(name: "NetworkClient", targets: ["NetworkClient"]),
+        .library(name: "NetworkClientTestSupport", targets: ["NetworkClientTestSupport"]),
     ],
     dependencies: [
         // Swift logging API
@@ -27,8 +28,14 @@ let package = Package(
         .target(
             name: "NetworkClient",
             dependencies: [.product(name: "Logging", package: "swift-log")]),
+        .target(
+            name: "NetworkClientTestSupport",
+            dependencies: [.target(name: "NetworkClient")]),
         .testTarget(
             name: "NetworkClientTests",
-            dependencies: [.target(name: "NetworkClient")]),
+            dependencies: [
+                .target(name: "NetworkClient"),
+                .target(name: "NetworkClientTestSupport"),
+            ]),
     ]
 )
