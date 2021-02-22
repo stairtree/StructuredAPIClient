@@ -24,8 +24,7 @@ public final class AddHeaders: Transport {
         /// Accumulating behavior - if a given header is already specified by a request, the transport's value is
         /// appended, as per `URLRequest.addValue(_:forHTTPHeaderField:)`.
         ///
-        /// - Note: This is rarely what you want, but it was the default behavior before this mechanism was added, and
-        ///   thus remains the default.
+        /// - Warning: This is rarely what you want.
         case append
         
         /// Overwriting behavior - if a given header is already specified by a request, the transport's value for the
@@ -35,6 +34,8 @@ public final class AddHeaders: Transport {
         
         /// Polyfill behavior - if a given header is already specified by a request, it is left untouched, and the
         /// transport's value is ignored.
+        ///
+        /// This behavior is the default.
         case add
     }
     
@@ -52,7 +53,7 @@ public final class AddHeaders: Transport {
     ///   - base: The base `Transport` that will have the headers applied
     ///   - headers: Headers to apply to the base `Transport`
     ///   - mode: The mode to use for resolving conflicts between a request's headers and the transport's headers.
-    public init(base: Transport, headers: [String: String], mode: Mode = .append) {
+    public init(base: Transport, headers: [String: String], mode: Mode = .add) {
         self.base = base
         self.headers = headers
         self.mode = mode
