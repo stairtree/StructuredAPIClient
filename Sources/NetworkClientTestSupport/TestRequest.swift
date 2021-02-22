@@ -17,6 +17,8 @@ import FoundationNetworking
 #endif
 import NetworkClient
 
+/// A `NetworkRequest` that simply requests the base URL (optionally with additional headers added) and expects UTF-8
+/// `String`s as responses.
 public struct TestRequest: NetworkRequest {
     private let extraHeaders: [String: String]
     
