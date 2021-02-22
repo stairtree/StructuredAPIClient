@@ -12,19 +12,14 @@ jobs:
       matrix:
         xcode:
           - latest
-          - latest-stable
-        platform:
-          - runner: macos-latest
-            destination: 'platform=macOS,arch=x86_64'
-          - runner: macos-11.0
-            destination: 'platform=macOS,arch=x86_64'
-          #- runner: macos-11.0
-          #  destination: 'platform=macOS,arch=arm64'
-          - runner: macos-latest
-            destination: 'platform=iOS Simulator,OS=latest,name=iPhone 11 Pro'
-          - runner: macos-latest
-            destination: 'platform=tvOS Simulator,OS=latest,name=Apple TV 4K'
-    runs-on: ${{ matrix.platform.runner }}
+          #- latest-stable
+        destination:
+          - 'platform=macOS,arch=x86_64'
+          #- 'platform=macOS,arch=arm64'
+          - 'platform=iOS Simulator,OS=latest,name=iPhone 11 Pro'
+          - 'platform=tvOS Simulator,OS=latest,name=Apple TV 4K'
+          - 'platform=watchOS Simulator,OS=latest,name=Apple Watch Series 6 - 44mm'
+    runs-on: macos-11.0
     steps:
     - name: Select latest available Xcode
       uses: maxim-lobanov/setup-xcode@v1
@@ -32,8 +27,8 @@ jobs:
         xcode-version: ${{ matrix.xcode }}
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Run tests for ${{ matrix.platform.destination }}
-      run: xcodebuild test -scheme NetworkClient-Package -enableThreadSanitizer YES -destination '${{ matrix.platform.destination }}'
+    - name: Run tests for ${{ matrix.destination }}
+      run: xcodebuild test -scheme NetworkClient-Package -enableThreadSanitizer YES -destination '${{ matrix.destination }}'
   
   linux:
     runs-on: ubuntu-20.04
@@ -41,17 +36,16 @@ jobs:
       fail-fast: false
       matrix:
         ver:
-          - 5.2
-          - 5.3
+          - swift:5.3
+          - swiftlang/swift:nightly-5.3
+          - swiftlang/swift:nightly-5.4
+          - swiftlang/swift:nightly-main
         os:
-          - xenial
           - bionic
           - focal
-          #- centos7
-          - centos8
           - amazonlinux2
     container:
-      image: swift:${{ matrix.ver }}-${{ matrix.os }}
+      image: ${{ matrix.ver }}-${{ matrix.os }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -65,7 +59,7 @@ jobs:
         uses: seanmiddleditch/gha-setup-vsdevenv@master
       - name: Install Swift snapshot
         run: |
-          Install-Binary -Url "https://swift.org/builds/development/windows10/swift-DEVELOPMENT-SNAPSHOT-2021-01-17-a/swift-DEVELOPMENT-SNAPSHOT-2021-01-17-a-windows10.exe" -Name "installer.exe" -ArgumentList ("-q")
+          Install-Binary -Url "https://swift.org/builds/development/windows10/swift-DEVELOPMENT-SNAPSHOT-2021-02-18-a/swift-DEVELOPMENT-SNAPSHOT-2021-02-18-a-windows10.exe" -Name "installer.exe" -ArgumentList ("-q")
       - name: Set Environment Variables
         run: |
           echo "SDKROOT=C:\Library\Developer\Platforms\Windows.platform\Developer\SDKs\Windows.sdk" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
