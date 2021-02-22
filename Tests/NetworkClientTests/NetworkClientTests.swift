@@ -18,24 +18,6 @@ import FoundationNetworking
 import NetworkClient
 import NetworkClientTestSupport
 
-struct TestRequest: NetworkRequest {
-    let extraHeaders: [String: String]
-    
-    init(extraHeaders: [String: String] = [:]) {
-        self.extraHeaders = extraHeaders
-    }
-    
-    func makeRequest(baseURL: URL) throws -> URLRequest {
-        var request = URLRequest(url: baseURL)
-        extraHeaders.forEach { request.addValue($1, forHTTPHeaderField: $0) }
-        return request
-    }
-
-    func parseResponse(_ data: Data) throws -> String {
-        return String(decoding: data, as: UTF8.self)
-    }
-}
-
 final class NetworkClientTests: XCTestCase {
     private static let baseTestURL = URL(string: "https://test.somewhere.com")!
     
