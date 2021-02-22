@@ -45,7 +45,7 @@ jobs:
           - focal
           - amazonlinux2
     container:
-      image: swift:${{ matrix.ver }}-${{ matrix.os }}
+      image: ${{ matrix.ver }}-${{ matrix.os }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
