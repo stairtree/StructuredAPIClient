@@ -4,7 +4,7 @@
     <img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT License">
 </a>
 <a href="https://swift.org">
-    <img src="https://img.shields.io/badge/swift-5.2-brightgreen.svg" alt="Swift 5.2">
+    <img src="https://img.shields.io/badge/swift-5.3-brightgreen.svg" alt="Swift 5.3">
 </a>
 <a href="https://github.com/stairtree/NetworkClient/actions">
     <img src="https://github.com/stairtree/NetworkClient/workflows/test/badge.svg" alt="CI">
@@ -18,10 +18,11 @@ A testable and composable network client.
 NetworkClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is known to support the following operating system versions:
 
 * Ubuntu 16.04+
+* AmazonLinux2
 * macOS 10.12+
 * iOS 12+
 * tvOS 12+
-* watchOS (untested since watchOS doesn't support `XCTest`)
+* watchOS 7+
 * Windows 10 (using the latest Swift development snapshot)
 
 To integrate the package:
