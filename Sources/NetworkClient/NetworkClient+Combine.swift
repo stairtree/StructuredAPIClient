@@ -25,7 +25,7 @@ extension NetworkClient {
     public func load<Request: NetworkRequest>(_ req: Request) -> AnyPublisher<Request.ResponseDataType, Error> {
         do {
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
-            let requestTimer = Timer(label: "Request '\(urlRequest.debugString)'")
+            let requestTimer = Metrics.Timer(label: "Request '\(urlRequest.debugString)'")
             let requestStart = DispatchTime.now()
             logger.trace(Logger.Message(stringLiteral: urlRequest.debugString))
             
@@ -33,7 +33,7 @@ extension NetworkClient {
             func handleResponse(_ response: Response) throws -> Request.ResponseDataType {
                 requestTimer.recordInterval(since: requestStart)
                 requestTimer.destroy()
-                let decodingTimer = Timer(label: "Decoding '\(urlRequest.debugString)'")
+                let decodingTimer = Metrics.Timer(label: "Decoding '\(urlRequest.debugString)'")
                 let decodingStart = DispatchTime.now()
                 defer {
                     decodingTimer.recordInterval(since: decodingStart)
