@@ -76,25 +76,3 @@ public final class AddHeaders: Transport {
         base.send(request: newRequest, completion: completion)
     }
 }
-
-#if canImport(Combine)
-import Combine
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-extension AddHeaders: CombineTransport {
-    public func send(request: URLRequest) -> AnyPublisher<Response, Never> {
-        var newRequest = request
-        for (key, value) in headers { newRequest.addValue(value, forHTTPHeaderField: key) }
-        if let combineTransport = base as? CombineTransport {
-            return combineTransport.send(request: newRequest)
-        } else {
-            return Future<Response, Never> { completion in
-                self.base.send(request: newRequest, completion: {
-                    completion(.success($0))
-                })
-            }
-            .eraseToAnyPublisher()
-        }
-    }
-}
-#endif

@@ -54,32 +54,3 @@ extension URLRequest {
         "\(httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
     }
 }
-
-#if canImport(Combine)
-import Combine
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-extension URLSession: CombineTransport {
-    public func send(request: URLRequest) -> AnyPublisher<Response, Never> {
-        return self.dataTaskPublisher(for: request)
-            .map { data, response -> Response in
-                guard let response = response as? HTTPURLResponse else {
-                    return .error(.network(URLError(.unsupportedURL)))
-                }
-                guard 200..<300 ~= response.statusCode else {
-                    if let status = APIError.Status(code: response.statusCode) {
-                        return .failure(status: status, body: data)
-                    } else {
-                        return .error(.network(.init(.cannotParseResponse)))
-                    }
-                }
-                return .success(data)
-        }
-        .catch { error -> Just<Response> in
-            if error.code == .cancelled { return Just(.error(.cancelled)) }
-            return Just(.error(.network(error)))
-        }
-        .eraseToAnyPublisher()
-    }
-}
-#endif

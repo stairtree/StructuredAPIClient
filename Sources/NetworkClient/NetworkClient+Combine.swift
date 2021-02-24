@@ -20,11 +20,6 @@ import Logging
 import Combine
 
 @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-public protocol CombineTransport: Transport {
-    func send(request: URLRequest) -> AnyPublisher<Response, Never>
-}
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
 extension NetworkClient {
     public func load<Request: NetworkRequest>(_ req: Request) -> AnyPublisher<Request.ResponseDataType, Error> {
         let start = DispatchTime.now()
@@ -45,21 +40,13 @@ extension NetworkClient {
             }
             
             // Send it to the transport
-            if let combineTransport = transport as? CombineTransport {
-                return combineTransport.send(request: urlRequest)
-                    .tryMap { response in
-                        return try handleResponse(response)
-                }
-                .eraseToAnyPublisher()
-            } else {
-                return Future<Request.ResponseDataType, Error> { completion in
-                    self.transport.send(request: urlRequest, completion: { response in
-                        let result = Result(catching: { try handleResponse(response) })
-                        completion(result)
-                    })
-                }
-                .eraseToAnyPublisher()
+            return Future<Request.ResponseDataType, Error> { completion in
+                self.transport.send(request: urlRequest, completion: { response in
+                    let result = Result(catching: { try handleResponse(response) })
+                    completion(result)
+                })
             }
+            .eraseToAnyPublisher()
         } catch {
             return Fail<Request.ResponseDataType, Error>(error: error).eraseToAnyPublisher()
         }

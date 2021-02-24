@@ -100,31 +100,3 @@ final class AuthState {
         }
     }
 }
-
-#if canImport(Combine)
-import Combine
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-extension TokenAuth: CombineTransport {
-    public func send(request: URLRequest) -> AnyPublisher<Response, Never> {
-        self.auth.tokenPublisher().flatMap { token -> AnyPublisher<Response, Error> in
-            let headers = ["Authorization": "Bearer \(token)"]
-            let transport = AddHeaders(base: self.base, headers: headers)
-            // We can't use `AnyPublisher<Response, Never>` in `flatMap`, because this is only implemented in 10.16+.
-            return transport.send(request: request).setFailureType(to: Error.self).eraseToAnyPublisher()
-        }
-        // This can never happen, as we faked the Failure type to `Error` above.
-        .assertNoFailure()
-        .eraseToAnyPublisher()
-    }
-}
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-extension AuthState {
-    func tokenPublisher() -> AnyPublisher<String, Error> {
-        return Future<String, Error> { completion in
-            self.token { completion($0) }
-        }.eraseToAnyPublisher()
-    }
-}
-#endif
