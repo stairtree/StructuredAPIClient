@@ -16,22 +16,29 @@ import Foundation
 import FoundationNetworking
 #endif
 import Logging
+import Metrics
 #if canImport(Combine)
 import Combine
 
 @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
 extension NetworkClient {
     public func load<Request: NetworkRequest>(_ req: Request) -> AnyPublisher<Request.ResponseDataType, Error> {
-        let start = DispatchTime.now()
-        // Construct the URLRequest
         do {
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
+            let requestTimer = Timer(label: "Request '\(urlRequest.debugString)'")
+            let requestStart = DispatchTime.now()
             logger.trace(Logger.Message(stringLiteral: urlRequest.debugString))
             
             // Response handler
             func handleResponse(_ response: Response) throws -> Request.ResponseDataType {
-                // TODO: Deliver a more accurate split of the different phases of the request
-                defer { self.logger.trace("Request '\(urlRequest.debugString)' took \(String(format: "%.4f", milliseconds(from: start, to: .now())))ms") }
+                requestTimer.recordInterval(since: requestStart)
+                requestTimer.destroy()
+                let decodingTimer = Timer(label: "Decoding '\(urlRequest.debugString)'")
+                let decodingStart = DispatchTime.now()
+                defer {
+                    decodingTimer.recordInterval(since: decodingStart)
+                    decodingTimer.destroy()
+                }
                 switch response {
                 case let .success(data): return try req.parseResponse(data)
                 case let .failure(status, data): throw try req.parseError(data, for: status)

@@ -23,11 +23,15 @@ let package = Package(
     dependencies: [
         // Swift logging API
         .package(url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.4.0")),
+        .package(url: "https://github.com/apple/swift-metrics.git", .upToNextMajor(from: "2.0.0")),
     ],
     targets: [
         .target(
             name: "NetworkClient",
-            dependencies: [.product(name: "Logging", package: "swift-log")]),
+            dependencies: [
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "Metrics", package: "swift-metrics")
+            ]),
         .target(
             name: "NetworkClientTestSupport",
             dependencies: [.target(name: "NetworkClient")]),

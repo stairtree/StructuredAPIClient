@@ -16,6 +16,7 @@ import Foundation
 import FoundationNetworking
 #endif
 import Logging
+import Metrics
 
 
 /// A `Transport`'s response
@@ -82,16 +83,22 @@ public final class NetworkClient {
 
     // Fetch any `NetworkRequest` type, and return its response asynchronously
     public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping (Result<Request.ResponseDataType, Error>) -> Void) {
-        let start = DispatchTime.now()
-        // Construct the URLRequest
         do {
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
+            let requestTimer = Timer(label: "Request '\(urlRequest.debugString)'")
+            let requestStart = DispatchTime.now()
             logger.trace(Logger.Message(stringLiteral: urlRequest.debugString))
 
             // Send it to the transport
             transport.send(request: urlRequest) { response in
-                // TODO: Deliver a more accurate split of the different phases of the request
-                defer { self.logger.trace("Request '\(urlRequest.debugString)' took \(String(format: "%.4f", milliseconds(from: start, to: .now())))ms") }
+                requestTimer.recordInterval(since: requestStart)
+                requestTimer.destroy()
+                let decodingTimer = Timer(label: "Decoding '\(urlRequest.debugString)'")
+                let decodingStart = DispatchTime.now()
+                defer {
+                    decodingTimer.recordInterval(since: decodingStart)
+                    decodingTimer.destroy()
+                }
                 
                 let result = Result { () throws -> Request.ResponseDataType in
                     switch response {
@@ -107,14 +114,4 @@ public final class NetworkClient {
             return completion(.failure(error))
         }
     }
-}
-
-func seconds(from: DispatchTime, to: DispatchTime) -> Double {
-    let nanoTime = to.uptimeNanoseconds - from.uptimeNanoseconds
-    return Double(nanoTime) / 1_000_000_000
-}
-
-func milliseconds(from: DispatchTime, to: DispatchTime) -> Double {
-    let nanoTime = to.uptimeNanoseconds - from.uptimeNanoseconds
-    return Double(nanoTime) / 1_000_000
 }
