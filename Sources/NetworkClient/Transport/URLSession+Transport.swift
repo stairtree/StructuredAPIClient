@@ -15,6 +15,7 @@ import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
+import Metrics
 
 extension URLSession: Transport {
     
@@ -24,7 +25,20 @@ extension URLSession: Transport {
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
     public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
+        
+        let requestStart = DispatchTime.now()
+        
         let task = self.dataTask(with: request) { (data, response, error) in
+            defer {
+                Metrics.Timer(label: "URLSession.send(request:completion:)", dimensions: [
+                    ("url", request.url?.absoluteString ?? ""),
+                    ("method", request.httpMethod ?? ""),
+                    ("status", (response as? HTTPURLResponse).map { "\($0.statusCode)" } ?? ""),
+                    ("error", error.map { "\($0)" } ?? ""),
+                ], preferredDisplayUnit: .milliseconds)
+                .recordInterval(since: requestStart)
+            }
+            
             switch error.map({ $0 as? URLError }) {
                 case .some(.some(let netError)) where netError.code == .cancelled: return completion(.error(.cancelled))
                 case .some(.some(let netError)): return completion(.error(.network(netError)))

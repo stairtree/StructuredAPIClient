@@ -84,20 +84,30 @@ public final class NetworkClient {
     // Fetch any `NetworkRequest` type, and return its response asynchronously
     public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping (Result<Request.ResponseDataType, Error>) -> Void) {
         do {
+            let start = DispatchTime.now()
             let urlRequest =  try req.makeRequest(baseURL: baseURL)
-            let requestTimer = Metrics.Timer(label: "Request '\(urlRequest.debugString)'", preferredDisplayUnit: .milliseconds)
-            let requestStart = DispatchTime.now()
+            
+            Metrics.Timer(label: "make_request", dimensions: [
+                ("request", "\(req)")
+            ], preferredDisplayUnit: .milliseconds)
+            .recordInterval(since: start)
+
             logger.trace(Logger.Message(stringLiteral: urlRequest.debugString))
 
             // Send it to the transport
             transport.send(request: urlRequest) { response in
-                requestTimer.recordInterval(since: requestStart)
-                requestTimer.destroy()
-                let decodingTimer = Metrics.Timer(label: "Decoding '\(urlRequest.debugString)'", preferredDisplayUnit: .milliseconds)
                 let decodingStart = DispatchTime.now()
+                
                 defer {
-                    decodingTimer.recordInterval(since: decodingStart)
-                    decodingTimer.destroy()
+                    Metrics.Timer(label: "decode", dimensions: [
+                        ("url", urlRequest.url?.absoluteString ?? ""),
+                    ], preferredDisplayUnit: .milliseconds)
+                    .recordInterval(since: decodingStart)
+                    Metrics.Timer(label: "request_total", dimensions: [
+                        ("request", "\(req)"),
+                        ("url", urlRequest.url?.absoluteString ?? ""),
+                    ], preferredDisplayUnit: .milliseconds)
+                    .recordInterval(since: start)
                 }
                 
                 let result = Result { () throws -> Request.ResponseDataType in
