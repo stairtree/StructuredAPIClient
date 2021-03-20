@@ -16,7 +16,15 @@ import Foundation
 import FoundationNetworking
 #endif
 
-extension URLSession: Transport {
+public final class URLSessionTransport: Transport {
+    
+    public let session: URLSession
+    
+    private var task: URLSessionDataTask!
+    
+    public init(_ session: URLSession) {
+        self.session = session
+    }
     
     /// Sends the request using a `URLSessionDataTask`
     /// - Parameters:
@@ -24,7 +32,7 @@ extension URLSession: Transport {
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
     public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
-        let task = self.dataTask(with: request) { (data, response, error) in
+        task = session.dataTask(with: request) { (data, response, error) in
             switch error.map({ $0 as? URLError }) {
                 case .some(.some(let netError)) where netError.code == .cancelled: return completion(.error(.cancelled))
                 case .some(.some(let netError)): return completion(.error(.network(netError)))
@@ -46,6 +54,12 @@ extension URLSession: Transport {
             return completion(.success(data ?? Data()))
         }
         task.resume()
+    }
+    
+    public var next: Transport? { nil }
+    
+    public func cancel() {
+        task.cancel()
     }
 }
 

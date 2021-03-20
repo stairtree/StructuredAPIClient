@@ -37,4 +37,6 @@ public final class TestTransport: Transport {
             completion(.failure(status: .tooManyRequests, body: Data()))
         }
     }
+    
+    public var next: Transport? { nil }
 }
