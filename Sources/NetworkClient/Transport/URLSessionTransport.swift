@@ -87,7 +87,7 @@ extension HTTPURLResponse {
     // TODO: Mapping unknown status codes to either 200 or 500 is kinda cruddy, do something better.
     func asTransportResponse(withData data: Data?) -> TransportResponse {
         return TransportResponse(
-            status: .init(rawValue: self.statusCode) ?? ((200..<300).contains(self.statusCode) ? .ok : .internalServerError),
+            status: (HTTPStatusCode(rawValue: self.statusCode) ?? ((200..<300).contains(self.statusCode) ? .ok : .internalServerError)),
             headers: .init(uniqueKeysWithValues: self.allHeaderFields.compactMap { k, v in
                 guard let name = k.base as? String else { return nil }
                 guard let value = v as? String else { return nil }
