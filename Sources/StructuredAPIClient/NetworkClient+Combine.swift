@@ -20,17 +20,6 @@ import Logging
 import Combine
 
 @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-extension Transport {
-    /// Provide a default implementation of `Transport.publisher(forRequest:)` for "traditional" transports. As per
-    /// standard practice, this simply wraps `Transport.send(request:completion:)` with the `Future` published.
-    ///
-    /// Combine-aware `Transport`s may, if they choose, provide their own implementation of this method.
-    public func publisher(forRequest request: URLRequest) -> AnyPublisher<TransportResponse, Error> {
-        return Future { self.send(request: request, completion: $0) }.eraseToAnyPublisher()
-    }
-}
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
 extension NetworkClient {
     /// Provides a Combine `Publisher` which emits the result of sending a given `NetworkRequest`.
     public func requestPublisher<Request: NetworkRequest>(for req: Request) -> AnyPublisher<Request.ResponseDataType, Error> {
