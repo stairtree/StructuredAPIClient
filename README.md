@@ -10,7 +10,6 @@
     <img src="https://github.com/stairtree/StructuredAPIClient/workflows/test/badge.svg" alt="CI">
 </a>
 
-
 A testable and composable network client.
 
 ### Supported Platforms
@@ -22,14 +21,14 @@ StructuredAPIClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is kn
 * macOS 10.12+
 * iOS 12+
 * tvOS 12+
-* watchOS 7+
+* watchOS 5+
 * Windows 10 (using the latest Swift development snapshot)
 
 To integrate the package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", .branch("main"))
+    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", from: "1.0.0")
 ]
 ```
 
