@@ -18,32 +18,30 @@ import FoundationNetworking
 import Logging
 
 // Handle token auth and add headers to an existing transport
-public final class TokenAuth: Transport {
-    private let base: Transport
+public final class TokenAuthenticationTransport: Transport {
+    public let next: Transport?
     private let logger: Logger
-
     private let auth: AuthState
 
     public init(base: Transport, accessToken: Token? = nil, refreshToken: Token? = nil, tokenProvider: TokenProvider, logger: Logger? = nil) {
-        self.base = base
+        self.next = base
         self.logger = logger ?? Logger(label: "TokenAuth")
         self.auth = AuthState(accessToken: accessToken, refreshToken: refreshToken, provider: tokenProvider, logger: logger)
     }
 
-    public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
+    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
         self.auth.token { result in
             switch result {
             case let .failure(error):
-                completion(.error(.unknown(error)))
+                completion(.failure(TransportFailure.unknown(error)))
             case let .success(token):
                 let headers = ["Authorization": "Bearer \(token)"]
-                let transport = AddHeaders(base: self.base, headers: headers)
+                let transport = AddHTTPHeadersTransport(base: self.next!, headers: headers)
+                
                 transport.send(request: request, completion: completion)
             }
         }
     }
-    
-    public var next: Transport? { base }
 }
 
 public protocol TokenProvider {

@@ -20,6 +20,8 @@ public final class URLSessionTransport: Transport {
     
     public let session: URLSession
     
+    public var next: Transport? { nil }
+    
     private var task: URLSessionDataTask!
     
     public init(_ session: URLSession) {
@@ -31,40 +33,67 @@ public final class URLSessionTransport: Transport {
     ///   - request: The configured request to send
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
-    public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
+    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
         task = session.dataTask(with: request) { (data, response, error) in
             switch error.map({ $0 as? URLError }) {
-                case .some(.some(let netError)) where netError.code == .cancelled: return completion(.error(.cancelled))
-                case .some(.some(let netError)): return completion(.error(.network(netError)))
-                case .some(.none): return completion(.error(.unknown(error!)))
+                case .some(.some(let netError)) where netError.code == .cancelled: return completion(.failure(TransportFailure.cancelled))
+                case .some(.some(let netError)): return completion(.failure(TransportFailure.network(netError)))
+                case .some(.none): return completion(.failure(TransportFailure.unknown(error!)))
                 default: break // no error
             }
             guard let response = response! as? HTTPURLResponse else {
-                return completion(.error(.network(URLError(.unsupportedURL))))
+                return completion(.failure(TransportFailure.network(URLError(.unsupportedURL))))
             }
             
-            guard 200..<300 ~= response.statusCode else {
-                if let data = data, let status = APIError.Status(code: response.statusCode) {
-                    return completion(.failure(status: status, body: data))
-                } else {
-                    return completion(.error(.network(.init(.cannotParseResponse))))
-                }
-            }
-            
-            return completion(.success(data ?? Data()))
+            completion(.success(response.asTransportResponse(withData: data)))
         }
         task.resume()
     }
-    
-    public var next: Transport? { nil }
     
     public func cancel() {
         task.cancel()
     }
 }
 
+#if canImport(Combine)
+import Combine
+
+@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+extension URLSessionTransport {
+    public func publisher(forRequest request: URLRequest) -> AnyPublisher<TransportResponse, Error> {
+        return self.session.dataTaskPublisher(for: request)
+            .mapError { netError -> Error in
+                if netError.code == .cancelled { return TransportFailure.cancelled }
+                else { return TransportFailure.network(netError) }
+            }
+            .tryMap { output in
+                guard let response = output.response as? HTTPURLResponse else {
+                    throw TransportFailure.network(URLError(.unsupportedURL))
+                }
+                return response.asTransportResponse(withData: output.data)
+            }
+            .eraseToAnyPublisher()
+    }
+}
+#endif
+
 extension URLRequest {
     var debugString: String {
         "\(httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
+    }
+}
+
+extension HTTPURLResponse {
+    // TODO: Mapping unknown status codes to either 200 or 500 is kinda cruddy, do something better.
+    func asTransportResponse(withData data: Data?) -> TransportResponse {
+        return TransportResponse(
+            status: .init(rawValue: self.statusCode) ?? ((200..<300).contains(self.statusCode) ? .ok : .internalServerError),
+            headers: .init(uniqueKeysWithValues: self.allHeaderFields.compactMap { k, v in
+                guard let name = k.base as? String else { return nil }
+                guard let value = v as? String else { return nil }
+                return (name, value)
+            }),
+            body: data ?? .init()
+        )
     }
 }

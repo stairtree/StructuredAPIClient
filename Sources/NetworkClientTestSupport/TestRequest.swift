@@ -26,13 +26,13 @@ public struct TestRequest: NetworkRequest {
         self.extraHeaders = extraHeaders
     }
     
+    public func parseResponse(_ response: TransportResponse) throws -> String {
+        return String(decoding: response.body, as: UTF8.self)
+    }
+    
     public func makeRequest(baseURL: URL) throws -> URLRequest {
         var request = URLRequest(url: baseURL)
         extraHeaders.forEach { request.addValue($1, forHTTPHeaderField: $0) }
         return request
-    }
-
-    public func parseResponse(_ data: Data) throws -> String {
-        return String(decoding: data, as: UTF8.self)
     }
 }
