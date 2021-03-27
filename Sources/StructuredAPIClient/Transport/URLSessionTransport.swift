@@ -17,11 +17,13 @@ import FoundationNetworking
 #endif
 
 public final class URLSessionTransport: Transport {
-    
+    /// The actual `URLSession` instance used to create request tasks.
     public let session: URLSession
     
+    /// See `Transport.next`.
     public var next: Transport? { nil }
     
+    /// An in-progress data task representing a request in flight
     private var task: URLSessionDataTask!
     
     public init(_ session: URLSession) {
@@ -34,24 +36,28 @@ public final class URLSessionTransport: Transport {
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
     public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
-        task = session.dataTask(with: request) { (data, response, error) in
+        self.task = session.dataTask(with: request) { (data, response, error) in
             switch error.map({ $0 as? URLError }) {
                 case .some(.some(let netError)) where netError.code == .cancelled: return completion(.failure(TransportFailure.cancelled))
                 case .some(.some(let netError)): return completion(.failure(TransportFailure.network(netError)))
                 case .some(.none): return completion(.failure(TransportFailure.unknown(error!)))
-                default: break // no error
+                case .none: break // no error
             }
-            guard let response = response! as? HTTPURLResponse else {
+            guard let response = response else {
+                return completion(.failure(TransportFailure.network(URLError(.unknown))))
+            }
+            guard let httpResponse = response as? HTTPURLResponse else {
                 return completion(.failure(TransportFailure.network(URLError(.unsupportedURL))))
             }
             
-            completion(.success(response.asTransportResponse(withData: data)))
+            completion(.success(httpResponse.asTransportResponse(withData: data)))
         }
-        task.resume()
+        self.task.resume()
     }
     
     public func cancel() {
-        task.cancel()
+        self.task.cancel()
+        self.task = nil
     }
 }
 
@@ -84,13 +90,11 @@ extension URLRequest {
 }
 
 extension HTTPURLResponse {
-    // TODO: Mapping unknown status codes to either 200 or 500 is kinda cruddy, do something better.
     func asTransportResponse(withData data: Data?) -> TransportResponse {
         return TransportResponse(
-            status: (HTTPStatusCode(rawValue: self.statusCode) ?? ((200..<300).contains(self.statusCode) ? .ok : .internalServerError)),
+            status: HTTPStatusCode(rawValue: self.statusCode) ?? .internalServerError,
             headers: .init(uniqueKeysWithValues: self.allHeaderFields.compactMap { k, v in
-                guard let name = k.base as? String else { return nil }
-                guard let value = v as? String else { return nil }
+                guard let name = k.base as? String, let value = v as? String else { return nil }
                 return (name, value)
             }),
             body: data ?? .init()

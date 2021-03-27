@@ -77,7 +77,7 @@ final class NetworkClientWithCombineTests: XCTestCase {
 
         let client = NetworkClient(
             baseURL: URL(string: "https://test.somewhere.com")!,
-            transport: TokenAuthenticationTransport(
+            transport: TokenAuthenticationHandler(
                 base: TestTransport(responses: [response], assertRequest: requestAssertions),
                 tokenProvider: tokenProvider
             )

@@ -17,8 +17,8 @@ import FoundationNetworking
 #endif
 import Logging
 
-// Handle token auth and add headers to an existing transport
-public final class TokenAuthenticationTransport: Transport {
+// Handle token auth and add appropriate auth headers to an existing transport.
+public final class TokenAuthenticationHandler: Transport {
     public let next: Transport?
     private let logger: Logger
     private let auth: AuthState
@@ -36,7 +36,7 @@ public final class TokenAuthenticationTransport: Transport {
                 completion(.failure(TransportFailure.unknown(error)))
             case let .success(token):
                 let headers = ["Authorization": "Bearer \(token)"]
-                let transport = AddHTTPHeadersTransport(base: self.next!, headers: headers)
+                let transport = AddHTTPHeadersHandler(base: self.next!, headers: headers)
                 
                 transport.send(request: request, completion: completion)
             }

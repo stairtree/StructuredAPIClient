@@ -17,7 +17,7 @@ import FoundationNetworking
 #endif
 
 /// Add headers to an existing `Transport`.
-public final class AddHTTPHeadersTransport: Transport {
+public final class AddHTTPHeadersHandler: Transport {
     
     /// An enumeration of the possible modes for working with headers.
     public enum Mode: CaseIterable {

@@ -11,78 +11,82 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// As complete an enumeration of official HTTP status codes as is reasonably possible.
+/// As complete an enumeration of official HTTP status codes as is reasonably possible, plus the option to specify
+/// custom status codes numerically, with full conformance to all the usual protocols.
 ///
 /// Yes, 418 is official. Yes, really.
-public enum HTTPStatusCode: Int, Hashable, CaseIterable {
+public enum HTTPStatusCode {
     // 1xx
-    case `continue` = 100
-    case switchingProtocols = 101
-    case processing = 102
-    case earlyHints = 103
+    case `continue`
+    case switchingProtocols
+    case processing
+    case earlyHints
 
     // 2xx
-    case ok = 200
-    case created = 201
-    case accepted = 202
-    case nonAuthoritativeInformation = 203
-    case noContent = 204
-    case resetContent = 205
-    case partialContent = 206
-    case multiStatus = 207
-    case alreadyReported = 208
-    case imUsed = 226
+    case ok
+    case created
+    case accepted
+    case nonAuthoritativeInformation
+    case noContent
+    case resetContent
+    case partialContent
+    case multiStatus
+    case alreadyReported
+    case imUsed
 
     // 3xx
-    case multipleChoices = 300
-    case movedPermanently = 301
-    case found = 302
-    case seeOther = 303
-    case notModified = 304
-    case useProxy = 305
-    case temporaryRedirect = 307
-    case permanentRedirect = 308
+    case multipleChoices
+    case movedPermanently
+    case found
+    case seeOther
+    case notModified
+    case useProxy
+    case temporaryRedirect
+    case permanentRedirect
 
     // 4xx
-    case badRequest = 400
-    case unauthorized = 401
-    case paymentRequired = 402
-    case forbidden = 403
-    case notFound = 404
-    case methodNotAllowed = 405
-    case notAcceptable = 406
-    case proxyAuthenticationRequired = 407
-    case requestTimeout = 408
-    case conflict = 409
-    case gone = 410
-    case lengthRequired = 411
-    case preconditionFailed = 412
-    case payloadTooLarge = 413
-    case uriTooLong = 414
-    case unsupportedMediaType = 415
-    case rangeNotSatisfiable = 416
-    case expectationFailed = 417
-    case imATeapot = 418
-    case misdirectedRequest = 421
-    case unprocessableEntity = 422
-    case locked = 423
-    case failedDependency = 424
-    case upgradeRequired = 426
-    case preconditionRequired = 428
-    case tooManyRequests = 429
-    case requestHeaderFieldsTooLarge = 431
-    case unavailableForLegalReasons = 451
+    case badRequest
+    case unauthorized
+    case paymentRequired
+    case forbidden
+    case notFound
+    case methodNotAllowed
+    case notAcceptable
+    case proxyAuthenticationRequired
+    case requestTimeout
+    case conflict
+    case gone
+    case lengthRequired
+    case preconditionFailed
+    case payloadTooLarge
+    case uriTooLong
+    case unsupportedMediaType
+    case rangeNotSatisfiable
+    case expectationFailed
+    case imATeapot
+    case misdirectedRequest
+    case unprocessableEntity
+    case locked
+    case failedDependency
+    case upgradeRequired
+    case preconditionRequired
+    case tooManyRequests
+    case requestHeaderFieldsTooLarge
+    case unavailableForLegalReasons
 
     // 5xx
-    case internalServerError = 500
-    case notImplemented = 501
-    case badGateway = 502
-    case serviceUnavailable = 503
-    case gatewayTimeout = 504
-    case httpVersionNotSupported = 505
-    case variantAlsoNegotiates = 506
-    case insufficientStorage = 507
-    case loopDetected = 508
-    case notExtended = 510
-    case networkAuthenticationRequired = 511
+    case internalServerError
+    case notImplemented
+    case badGateway
+    case serviceUnavailable
+    case gatewayTimeout
+    case httpVersionNotSupported
+    case variantAlsoNegotiates
+    case insufficientStorage
+    case loopDetected
+    case notExtended
+    case networkAuthenticationRequired
+    
+    // other
+    case custom(Int)
 }

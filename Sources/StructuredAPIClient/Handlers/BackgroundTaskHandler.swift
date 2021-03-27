@@ -20,7 +20,7 @@ import Logging
 #if !os(macOS) && canImport(UIKit)
 import UIKit
 
-public final class BackgroundExtendingTransport: Transport {
+public final class BackgroundExtendingHandler: Transport {
     
     /// The base `Transport` to extend.
     public let next: Transport?
