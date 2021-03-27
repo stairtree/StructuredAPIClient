@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// This source file is part of the Network Client open source project
+// This source file is part of the StructuredAPIClient open source project
 //
 // Copyright (c) Stairtree GmbH
 // Licensed under the MIT license
@@ -15,7 +15,7 @@ import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-import NetworkClient
+import StructuredAPIClient
 
 
 /// A `TokenProvider` that returns a given accessToken and refreshToken for the respective requests.

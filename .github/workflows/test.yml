@@ -28,7 +28,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Run tests for ${{ matrix.destination }}
-      run: xcodebuild test -scheme NetworkClient-Package -enableThreadSanitizer YES -destination '${{ matrix.destination }}'
+      run: xcodebuild test -scheme StructuredAPIClient-Package -enableThreadSanitizer YES -destination '${{ matrix.destination }}'
   
   linux:
     runs-on: ubuntu-20.04

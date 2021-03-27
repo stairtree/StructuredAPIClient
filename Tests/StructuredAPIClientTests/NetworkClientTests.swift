@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// This source file is part of the Network Client open source project
+// This source file is part of the StructuredAPIClient open source project
 //
 // Copyright (c) Stairtree GmbH
 // Licensed under the MIT license
@@ -15,8 +15,8 @@ import XCTest
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-import NetworkClient
-import NetworkClientTestSupport
+@testable import StructuredAPIClient
+import StructuredAPIClientTestSupport
 
 final class NetworkClientTests: XCTestCase {
     private static let baseTestURL = URL(string: "https://test.somewhere.com")!
@@ -66,7 +66,7 @@ final class NetworkClientTests: XCTestCase {
     }
 
     func testNetworkClient() throws {
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
         }
@@ -79,13 +79,13 @@ final class NetworkClientTests: XCTestCase {
         let accessToken = TestToken(raw: "abc", expiresAt: Date())
         let refreshToken = TestToken(raw: "def", expiresAt: Date())
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["Authorization"], "Bearer abc")
         }
         let client = NetworkClient(baseURL: Self.baseTestURL, transport:
-            TokenAuth(
+            TokenAuthenticationHandler(
                 base: TestTransport(responses: [response], assertRequest: requestAssertions),
                 tokenProvider: tokenProvider
             )
@@ -95,79 +95,79 @@ final class NetworkClientTests: XCTestCase {
     }
     
     func testStackingHeaders() throws {
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1")
             XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
-        let h1 = AddHeaders(base: base, headers: ["H1": "1"])
-        let h2 = AddHeaders(base: h1, headers: ["H2": "2"])
+        let h1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1"])
+        let h2 = AddHTTPHeadersHandler(base: h1, headers: ["H2": "2"])
         let client = NetworkClient(baseURL: Self.baseTestURL, transport: h2)
         
         try self.runTest(request: TestRequest(), client: client, expecting: "Test")
     }
     
     func testConflictingHeaderDefaultMode() throws {
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-3")
             XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
-        let h1_1 = AddHeaders(base: base, headers: ["H1": "1-1"])
-        let h1_2 = AddHeaders(base: h1_1, headers: ["H1": "1-2"])
-        let h2 = AddHeaders(base: h1_2, headers: ["H2": "2"])
+        let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"])
+        let h1_2 = AddHTTPHeadersHandler(base: h1_1, headers: ["H1": "1-2"])
+        let h2 = AddHTTPHeadersHandler(base: h1_2, headers: ["H2": "2"])
         let client = NetworkClient(baseURL: Self.baseTestURL, transport: h2)
         
         try self.runTest(request: TestRequest(extraHeaders: ["H1": "1-3"]), client: client, expecting: "Test")
     }
 
     func testConflictingHeaderAddMode() throws {
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-3")
             XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
-        let h1_1 = AddHeaders(base: base, headers: ["H1": "1-1"], mode: .add)
-        let h1_2 = AddHeaders(base: h1_1, headers: ["H1": "1-2"], mode: .add)
-        let h2 = AddHeaders(base: h1_2, headers: ["H2": "2"], mode: .add)
+        let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"], mode: .add)
+        let h1_2 = AddHTTPHeadersHandler(base: h1_1, headers: ["H1": "1-2"], mode: .add)
+        let h2 = AddHTTPHeadersHandler(base: h1_2, headers: ["H2": "2"], mode: .add)
         let client = NetworkClient(baseURL: Self.baseTestURL, transport: h2)
         
         try self.runTest(request: TestRequest(extraHeaders: ["H1": "1-3"]), client: client, expecting: "Test")
     }
 
     func testConflictingHeaderAppendMode() throws {
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-3,1-2,1-1")
             XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
-        let h1_1 = AddHeaders(base: base, headers: ["H1": "1-1"], mode: .append)
-        let h1_2 = AddHeaders(base: h1_1, headers: ["H1": "1-2"], mode: .append)
-        let h2 = AddHeaders(base: h1_2, headers: ["H2": "2"], mode: .append)
+        let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"], mode: .append)
+        let h1_2 = AddHTTPHeadersHandler(base: h1_1, headers: ["H1": "1-2"], mode: .append)
+        let h2 = AddHTTPHeadersHandler(base: h1_2, headers: ["H2": "2"], mode: .append)
         let client = NetworkClient(baseURL: Self.baseTestURL, transport: h2)
         
         try self.runTest(request: TestRequest(extraHeaders: ["H1": "1-3"]), client: client, expecting: "Test")
     }
 
     func testConflictingHeaderReplaceMode() throws {
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-1")
             XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
-        let h1_1 = AddHeaders(base: base, headers: ["H1": "1-1"], mode: .replace)
-        let h1_2 = AddHeaders(base: h1_1, headers: ["H1": "1-2"], mode: .replace)
-        let h2 = AddHeaders(base: h1_2, headers: ["H2": "2"], mode: .replace)
+        let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"], mode: .replace)
+        let h1_2 = AddHTTPHeadersHandler(base: h1_1, headers: ["H1": "1-2"], mode: .replace)
+        let h2 = AddHTTPHeadersHandler(base: h1_2, headers: ["H2": "2"], mode: .replace)
         let client = NetworkClient(baseURL: Self.baseTestURL, transport: h2)
         
         try self.runTest(request: TestRequest(extraHeaders: ["H1": "1-3"]), client: client, expecting: "Test")

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// This source file is part of the Network Client open source project
+// This source file is part of the StructuredAPIClient open source project
 //
 // Copyright (c) Stairtree GmbH
 // Licensed under the MIT license
@@ -15,8 +15,8 @@ import XCTest
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-import NetworkClient
-import NetworkClientTestSupport
+@testable import StructuredAPIClient
+import StructuredAPIClientTestSupport
 #if canImport(Combine)
 import Combine
 
@@ -32,10 +32,10 @@ final class NetworkClientWithCombineTests: XCTestCase {
     func testNetworkClientWithCombine() throws {
         struct TestRequest: NetworkRequest {
             func makeRequest(baseURL: URL) throws -> URLRequest { URLRequest(url: baseURL) }
-            func parseResponse(_ data: Data) throws -> String { String(decoding: data, as: UTF8.self) }
+            func parseResponse(_ response: TransportResponse) throws -> String { .init(decoding: response.body, as: UTF8.self) }
         }
         
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
@@ -45,7 +45,7 @@ final class NetworkClientWithCombineTests: XCTestCase {
         
         let exp = expectation(description: "Result")
         
-        sink = client.load(TestRequest())
+        sink = client.requestPublisher(for: TestRequest())
             .sink (receiveCompletion: { _ in
                 exp.fulfill()
             }, receiveValue: { value in
@@ -60,7 +60,7 @@ final class NetworkClientWithCombineTests: XCTestCase {
     func testTokenAuthWithCombine() {
         struct TestRequest: NetworkRequest {
             func makeRequest(baseURL: URL) throws -> URLRequest { URLRequest(url: baseURL) }
-            func parseResponse(_ data: Data) throws -> String { String(decoding: data, as: UTF8.self) }
+            func parseResponse(_ response: TransportResponse) throws -> String { .init(decoding: response.body, as: UTF8.self) }
         }
 
         let accessToken = TestToken(raw: "abc", expiresAt: Date())
@@ -68,7 +68,7 @@ final class NetworkClientWithCombineTests: XCTestCase {
 
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
 
-        let response: Response = .success(Data("Test".utf8))
+        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
 
         let requestAssertions: (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
@@ -77,7 +77,7 @@ final class NetworkClientWithCombineTests: XCTestCase {
 
         let client = NetworkClient(
             baseURL: URL(string: "https://test.somewhere.com")!,
-            transport: TokenAuth(
+            transport: TokenAuthenticationHandler(
                 base: TestTransport(responses: [response], assertRequest: requestAssertions),
                 tokenProvider: tokenProvider
             )
@@ -85,7 +85,7 @@ final class NetworkClientWithCombineTests: XCTestCase {
         
         let exp = expectation(description: "Result")
         
-        sink = client.load(TestRequest())
+        sink = client.requestPublisher(for: TestRequest())
             .sink (receiveCompletion: { _ in
                 exp.fulfill()
             }, receiveValue: { value in

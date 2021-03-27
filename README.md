@@ -1,4 +1,4 @@
-# NetworkClient
+# StructuredAPIClient
 
 <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT License">
@@ -6,8 +6,8 @@
 <a href="https://swift.org">
     <img src="https://img.shields.io/badge/swift-5.3-brightgreen.svg" alt="Swift 5.3">
 </a>
-<a href="https://github.com/stairtree/NetworkClient/actions">
-    <img src="https://github.com/stairtree/NetworkClient/workflows/test/badge.svg" alt="CI">
+<a href="https://github.com/stairtree/StructuredAPIClient/actions">
+    <img src="https://github.com/stairtree/StructuredAPIClient/workflows/test/badge.svg" alt="CI">
 </a>
 
 
@@ -15,7 +15,7 @@ A testable and composable network client.
 
 ### Supported Platforms
 
-NetworkClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is known to support the following operating system versions:
+StructuredAPIClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is known to support the following operating system versions:
 
 * Ubuntu 16.04+
 * AmazonLinux2
@@ -29,7 +29,7 @@ To integrate the package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/stairtree/NetworkClient.git", .branch("main"))
+    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", .branch("main"))
 ]
 ```
 

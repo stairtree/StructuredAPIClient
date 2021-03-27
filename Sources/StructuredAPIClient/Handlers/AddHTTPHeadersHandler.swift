@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// This source file is part of the Network Client open source project
+// This source file is part of the StructuredAPIClient open source project
 //
 // Copyright (c) Stairtree GmbH
 // Licensed under the MIT license
@@ -17,7 +17,7 @@ import FoundationNetworking
 #endif
 
 /// Add headers to an existing `Transport`.
-public final class AddHeaders: Transport {
+public final class AddHTTPHeadersHandler: Transport {
     
     /// An enumeration of the possible modes for working with headers.
     public enum Mode: CaseIterable {
@@ -39,8 +39,10 @@ public final class AddHeaders: Transport {
         case add
     }
     
-    /// The base `Transport` to extend with extra headers
-    private let base: Transport
+    /// The base `Transport` to extend with extra headers.
+    ///
+    /// - Note: Never `nil` in practice for this transport.
+    public let next: Transport?
     
     /// Additional headers that will be applied to the request upon sending.
     private let headers: [String: String]
@@ -54,12 +56,12 @@ public final class AddHeaders: Transport {
     ///   - headers: Headers to apply to the base `Transport`
     ///   - mode: The mode to use for resolving conflicts between a request's headers and the transport's headers.
     public init(base: Transport, headers: [String: String], mode: Mode = .add) {
-        self.base = base
+        self.next = base
         self.headers = headers
         self.mode = mode
     }
 
-    public func send(request: URLRequest, completion: @escaping (Response) -> Void) {
+    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
         var newRequest = request
 
         for (key, value) in self.headers {
@@ -73,8 +75,6 @@ public final class AddHeaders: Transport {
                     newRequest.addValue(value, forHTTPHeaderField: key)
             }
         }
-        base.send(request: newRequest, completion: completion)
+        self.next!.send(request: newRequest, completion: completion)
     }
-    
-    public var next: Transport? { base }
 }
