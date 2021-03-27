@@ -17,7 +17,7 @@ import FoundationNetworking
 #endif
 import Logging
 
-#if !os(macOS)
+#if !os(macOS) && canImport(UIKit)
 import UIKit
 
 public final class BackgroundExtendingTransport: Transport {
