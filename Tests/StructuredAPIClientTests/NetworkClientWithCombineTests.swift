@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// This source file is part of the Network Client open source project
+// This source file is part of the StructuredAPIClient open source project
 //
 // Copyright (c) Stairtree GmbH
 // Licensed under the MIT license
@@ -15,8 +15,8 @@ import XCTest
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-@testable import NetworkClient
-import NetworkClientTestSupport
+@testable import StructuredAPIClient
+import StructuredAPIClientTestSupport
 #if canImport(Combine)
 import Combine
 

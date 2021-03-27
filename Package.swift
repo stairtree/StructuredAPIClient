@@ -1,7 +1,7 @@
 // swift-tools-version:5.3
 //===----------------------------------------------------------------------===//
 //
-// This source file is part of the Network Client open source project
+// This source file is part of the StructuredAPIClient open source project
 //
 // Copyright (c) Stairtree GmbH
 // Licensed under the MIT license
@@ -15,10 +15,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "NetworkClient",
+    name: "StructuredAPIClient",
     products: [
-        .library(name: "NetworkClient", targets: ["NetworkClient"]),
-        .library(name: "NetworkClientTestSupport", targets: ["NetworkClientTestSupport"]),
+        .library(name: "StructuredAPIClient", targets: ["StructuredAPIClient"]),
+        .library(name: "StructuredAPIClientTestSupport", targets: ["StructuredAPIClientTestSupport"]),
     ],
     dependencies: [
         // Swift logging API
@@ -26,16 +26,16 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "NetworkClient",
+            name: "StructuredAPIClient",
             dependencies: [.product(name: "Logging", package: "swift-log")]),
         .target(
-            name: "NetworkClientTestSupport",
-            dependencies: [.target(name: "NetworkClient")]),
+            name: "StructuredAPIClientTestSupport",
+            dependencies: [.target(name: "StructuredAPIClient")]),
         .testTarget(
-            name: "NetworkClientTests",
+            name: "StructuredAPIClientTests",
             dependencies: [
-                .target(name: "NetworkClient"),
-                .target(name: "NetworkClientTestSupport"),
+                .target(name: "StructuredAPIClient"),
+                .target(name: "StructuredAPIClientTestSupport"),
             ]),
     ]
 )
