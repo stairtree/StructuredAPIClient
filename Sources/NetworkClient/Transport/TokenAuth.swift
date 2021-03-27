@@ -42,6 +42,8 @@ public final class TokenAuth: Transport {
             }
         }
     }
+    
+    public var next: Transport? { base }
 }
 
 public protocol TokenProvider {

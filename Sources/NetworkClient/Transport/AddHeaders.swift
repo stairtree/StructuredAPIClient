@@ -75,4 +75,6 @@ public final class AddHeaders: Transport {
         }
         base.send(request: newRequest, completion: completion)
     }
+    
+    public var next: Transport? { base }
 }

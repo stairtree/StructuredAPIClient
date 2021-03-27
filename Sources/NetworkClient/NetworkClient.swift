@@ -37,8 +37,25 @@ public protocol Transport {
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
     func send(request: URLRequest, completion: @escaping (_ response: Response) -> Void)
+    
+    /// The next Transport that the request is being forwarded to.
+    ///
+    /// If `nil`, this should be the final `Transport`
+    var next: Transport? { get }
+    
+    /// Cancel the request
+    ///
+    /// - Note: Any `Tranport` forwarding the request must call `cancel()` on the next `Transport`
+    func cancel()
 }
 
+extension Transport {
+    
+    /// If there is no special handling of cancellation, the default implementation just forwards to the next `Transport`.
+    ///
+    /// - Note: You must call `cancel()` on the next `Transport` if you customize this method.
+    public func cancel() { next?.cancel() }
+}
 
 /// Any request that can be sent as a `URLRequest` with a `NetworkClient`, and returns a response.
 public protocol NetworkRequest {
@@ -74,7 +91,7 @@ public final class NetworkClient {
     let transport: Transport
     let logger: Logger
 
-    public init(baseURL: URL, transport: Transport = URLSession.shared, logger: Logger? = nil) {
+    public init(baseURL: URL, transport: Transport = URLSessionTransport(.shared), logger: Logger? = nil) {
         self.baseURL = baseURL
         self.transport = transport
         self.logger = logger ?? Logger(label: "NetworkClient")
