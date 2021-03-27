@@ -88,10 +88,10 @@ extension NetworkRequest {
 
 public final class NetworkClient {
     public let baseURL: URL
-    let transport: Transport
+    let transport: () -> Transport
     let logger: Logger
 
-    public init(baseURL: URL, transport: Transport = URLSessionTransport(.shared), logger: Logger? = nil) {
+    public init(baseURL: URL, transport: @escaping @autoclosure () -> Transport = URLSessionTransport(.shared), logger: Logger? = nil) {
         self.baseURL = baseURL
         self.transport = transport
         self.logger = logger ?? Logger(label: "NetworkClient")
@@ -106,7 +106,7 @@ public final class NetworkClient {
             logger.trace(Logger.Message(stringLiteral: urlRequest.debugString))
 
             // Send it to the transport
-            transport.send(request: urlRequest) { response in
+            transport().send(request: urlRequest) { response in
                 // TODO: Deliver a more accurate split of the different phases of the request
                 defer { self.logger.trace("Request '\(urlRequest.debugString)' took \(String(format: "%.4f", milliseconds(from: start, to: .now())))ms") }
                 

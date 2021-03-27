@@ -41,7 +41,7 @@ extension NetworkClient {
             
             // Send it to the transport
             return Future<Request.ResponseDataType, Error> { completion in
-                self.transport.send(request: urlRequest, completion: { response in
+                self.transport().send(request: urlRequest, completion: { response in
                     let result = Result(catching: { try handleResponse(response) })
                     completion(result)
                 })
