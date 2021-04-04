@@ -26,6 +26,13 @@ public struct TransportResponse {
     
     /// The raw HTTP response body. If there was no response body, this will have a zero length.
     public let body: Data
+    
+    /// Create a new `TransportResponse`. Intended for use by `Transport` implementations.
+    public init(status: HTTPStatusCode, headers: [String: String], body: Data) {
+        self.status = status
+        self.headers = headers
+        self.body = body
+    }
 }
 
 /// A `Transport` maps a `URLRequest` to a `Status` and `Data` pair asynchronously.
