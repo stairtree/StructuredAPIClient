@@ -61,55 +61,6 @@ public final class URLSessionTransport: Transport {
     }
 }
 
-@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
-extension URLSessionTransport {
-    
-    /// Sends the request using a `URLSessionDataTask`
-    /// - Parameter request: The configured request to send.
-    /// - Returns: The received response from the server.
-    public func send(request: URLRequest) async throws -> TransportResponse {
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw TransportFailure.network(URLError(.unsupportedURL))
-            }
-            return httpResponse.asTransportResponse(withData: data)
-            
-        } catch let netError as URLError {
-            if netError.code == .cancelled { throw TransportFailure.cancelled }
-            throw TransportFailure.network(netError)
-            
-        } catch let error as TransportFailure {
-            throw error
-            
-        } catch {
-            throw TransportFailure.unknown(error)
-        }
-    }
-}
-
-#if canImport(Combine)
-import Combine
-
-@available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
-extension URLSessionTransport {
-    public func publisher(forRequest request: URLRequest) -> AnyPublisher<TransportResponse, Error> {
-        return self.session.dataTaskPublisher(for: request)
-            .mapError { netError -> Error in
-                if netError.code == .cancelled { return TransportFailure.cancelled }
-                else { return TransportFailure.network(netError) }
-            }
-            .tryMap { output in
-                guard let response = output.response as? HTTPURLResponse else {
-                    throw TransportFailure.network(URLError(.unsupportedURL))
-                }
-                return response.asTransportResponse(withData: output.data)
-            }
-            .eraseToAnyPublisher()
-    }
-}
-#endif
-
 extension URLRequest {
     var debugString: String {
         "\(httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
