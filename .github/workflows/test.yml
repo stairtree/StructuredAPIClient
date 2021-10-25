@@ -55,11 +55,11 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - name: Setup VS dev env
-        uses: seanmiddleditch/gha-setup-vsdevenv@master
-      - name: Install Swift snapshot
-        run: |
-          Install-Binary -Url "https://download.swift.org/swift-5.5-release/windows10/swift-5.5-RELEASE/swift-5.5-RELEASE-windows10.exe" -Name "installer.exe" -ArgumentList ("-q")
+      - name: Install Swift toolchain
+        uses: compnerd/gha-setup-swift@main
+        with:
+          branch: swift-5.5-release
+          tag: 5.5-RELEASE
       - name: Checkout
         uses: actions/checkout@v2
       - name: Run tests
