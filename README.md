@@ -28,7 +28,7 @@ To integrate the package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", from: "1.0.0")
+    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", from: "1.1.1")
 ]
 ```
 
