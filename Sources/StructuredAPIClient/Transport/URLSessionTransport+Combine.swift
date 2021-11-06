@@ -27,7 +27,7 @@ extension URLSessionTransport {
                 if netError.code == .cancelled { return TransportFailure.cancelled }
                 else { return TransportFailure.network(netError) }
             }
-            .tryMap { output in
+            .tryMap { output -> TransportResponse in
                 guard let response = output.response as? HTTPURLResponse else {
                     throw TransportFailure.network(URLError(.unsupportedURL))
                 }
