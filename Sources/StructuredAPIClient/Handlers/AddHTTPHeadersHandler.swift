@@ -20,7 +20,7 @@ import FoundationNetworking
 public final class AddHTTPHeadersHandler: Transport {
     
     /// An enumeration of the possible modes for working with headers.
-    public enum Mode: CaseIterable {
+    public enum Mode: CaseIterable, Sendable {
         /// Accumulating behavior - if a given header is already specified by a request, the transport's value is
         /// appended, as per `URLRequest.addValue(_:forHTTPHeaderField:)`.
         ///
@@ -61,7 +61,7 @@ public final class AddHTTPHeadersHandler: Transport {
         self.mode = mode
     }
 
-    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, Error>) -> Void) {
         var newRequest = request
 
         for (key, value) in self.headers {

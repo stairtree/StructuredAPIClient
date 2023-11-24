@@ -29,62 +29,44 @@ public final class BackgroundExtendingHandler: Transport {
     private let name: String?
     
     /// Called synchronously on the main thread shortly before the app is suspended.
-    private let expirationHandler: (() -> Void)?
+    private let expirationHandler: (@Sendable () -> Void)?
     
-    private var started: Bool = false
+    private final class LockedStartedFlag: @unchecked Sendable {
+        private let lock = NSLock()
+        private var flag = false
+        
+        var value: Bool {
+            get { self.lock.withLock { self.flag } }
+            set { self.lock.withLock { self.flag = newValue } }
+        }
+    }
     
-    public init(base: Transport, name: String?, expirationHandler: (() -> Void)?) {
+    private let started = LockedStartedFlag()
+    
+    public init(base: Transport, name: String?, expirationHandler: (@Sendable () -> Void)?) {
         self.next = base
         self.name = name
         self.expirationHandler = expirationHandler
     }
     
-    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
-        if #available(
-            iOSApplicationExtension 9,
-            tvOSApplicationExtension 9,
-            macCatalystApplicationExtension 13,
-            watchOS 2,
-            iOS 999, tvOS 999, macCatalyst 999, *
-        ) {
-            let reason = request.debugString
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, Error>) -> Void) {
+        let reason = request.debugString
 
-            ProcessInfo().performExpiringActivity(withReason: reason, using: { expired in
-                // Being called with `expired` without being `started` means
-                // the background assertion was not granted.
-                if expired && !self.started {
-                    self.cancel()
-                    return completion(.failure(TransportFailure.cancelled))
-                }
-                
-                self.started = true
-                guard !expired else {
-                    return self.cancel()
-                }
-                
-                self.next!.send(request: request, completion: completion)
-            })
-        } else {
-            #if !os(watchOS)
-            let reason = "\(name.map { "\($0)-" } ?? "")\(request.debugString)"
-            var identifier: UIBackgroundTaskIdentifier!
-
-            identifier = UIApplication.shared.beginBackgroundTask(withName: reason, expirationHandler: { [weak self] in
-                self?.expirationHandler?()
-                UIApplication.shared.endBackgroundTask(identifier)
-            })
-
-            guard identifier != .invalid else {
+        ProcessInfo.processInfo.performExpiringActivity(withReason: reason, using: { expired in
+            // Being called with `expired` without being `started` means
+            // the background assertion was not granted.
+            if expired && !self.started.value {
                 self.cancel()
                 return completion(.failure(TransportFailure.cancelled))
             }
             
-            self.next!.send(request: request) { response in
-                completion(response)
-                UIApplication.shared.endBackgroundTask(identifier)
+            self.started.value = true
+            guard !expired else {
+                return self.cancel()
             }
-            #endif
-        }
+            
+            self.next!.send(request: request, completion: completion)
+        })
     }
 }
 #endif

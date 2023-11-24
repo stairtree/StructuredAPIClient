@@ -17,24 +17,42 @@ import FoundationNetworking
 #endif
 import StructuredAPIClient
 
+private final class TestTransportData: @unchecked Sendable {
+    let lock = NSLock()
+    var history: [URLRequest]
+    var responses: [Result<TransportResponse, Error>]
+    
+    init(history: [URLRequest], responses: [Result<TransportResponse, Error>]) {
+        self.history = history
+        self.responses = responses
+    }
+    
+    func withLock<R>(_ closure: @escaping @Sendable (inout [URLRequest], inout [Result<TransportResponse, Error>]) throws -> R) rethrows -> R {
+        try self.lock.withLock {
+            try closure(&self.history, &self.responses)
+        }
+    }
+}
+
 // A `Transport` that synchronously returns static values for tests
 public final class TestTransport: Transport {
-    var history: [URLRequest] = []
-    var responses: [Result<TransportResponse, Error>]
-    var assertRequest: (URLRequest) -> Void
+    private let data: TestTransportData
+    let assertRequest: @Sendable (URLRequest) -> Void
 
-    public init(responses: [Result<TransportResponse, Error>], assertRequest: @escaping (URLRequest) -> Void = { _ in }) {
-        self.responses = responses
+    public init(responses: [Result<TransportResponse, Error>], assertRequest: @escaping @Sendable (URLRequest) -> Void = { _ in }) {
+        self.data = .init(history: [], responses: responses)
         self.assertRequest = assertRequest
     }
 
-    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
-        assertRequest(request)
-        history.append(request)
-        if !responses.isEmpty {
-            completion(responses.removeFirst())
-        } else {
-            completion(.failure(APIError(status: .tooManyRequests, body: Data())))
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, Error>) -> Void) {
+        self.assertRequest(request)
+        self.data.withLock { history, responses in
+            history.append(request)
+            if !responses.isEmpty {
+                completion(responses.removeFirst())
+            } else {
+                completion(.failure(APIError(status: .tooManyRequests, body: Data())))
+            }
         }
     }
     

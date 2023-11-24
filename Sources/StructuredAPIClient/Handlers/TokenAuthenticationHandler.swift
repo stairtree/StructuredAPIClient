@@ -29,7 +29,7 @@ public final class TokenAuthenticationHandler: Transport {
         self.auth = AuthState(accessToken: accessToken, refreshToken: refreshToken, provider: tokenProvider, logger: logger)
     }
 
-    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, Error>) -> Void) {
         self.auth.token { result in
             switch result {
             case let .failure(error):
@@ -46,42 +46,56 @@ public final class TokenAuthenticationHandler: Transport {
 
 public protocol TokenProvider {
     // Get access token and refresh token
-    func fetchToken(completion: @escaping (Result<(Token, Token), Error>) -> Void)
+    func fetchToken(completion: @escaping @Sendable (Result<(Token, Token), Error>) -> Void)
 
     // Refreh the current token
-    func refreshToken(withRefreshToken refreshToken: Token, completion: @escaping (Result<Token, Error>) -> Void)
+    func refreshToken(withRefreshToken refreshToken: Token, completion: @escaping @Sendable (Result<Token, Error>) -> Void)
 }
 
-public protocol Token {
+public protocol Token: Sendable {
     var raw: String { get }
     var expiresAt: Date? { get }
 }
 
-final class AuthState {
-    var accessToken: Token? = nil
-    var refreshToken: Token? = nil
-
+final class AuthState: @unchecked Sendable {
+    private final class LockedTokens: @unchecked Sendable {
+        private let lock = NSLock()
+        private var accessToken: Token?
+        private var refreshToken: Token?
+        
+        init(accessToken: Token?, refreshToken: Token?) {
+            self.accessToken = accessToken
+            self.refreshToken = refreshToken
+        }
+        
+        func withLock<R>(_ closure: @escaping @Sendable (inout Token?, inout Token?) throws -> R) rethrows -> R {
+            try self.lock.withLock {
+                try closure(&self.accessToken, &self.refreshToken)
+            }
+        }
+    }
+    
+    private let tokens: LockedTokens
     let provider: TokenProvider
     let logger: Logger
 
     internal init(accessToken: Token? = nil, refreshToken: Token? = nil, provider: TokenProvider, logger: Logger? = nil) {
-        self.accessToken = accessToken
-        self.refreshToken = refreshToken
+        self.tokens = .init(accessToken: accessToken, refreshToken: refreshToken)
         self.provider = provider
         self.logger = logger ?? Logger(label: "AuthState")
     }
 
-    func token(_ completion: @escaping (Result<String, Error>) -> Void) {
-        if let access = self.accessToken, (access.expiresAt ?? Date.distantFuture) > Date() {
-            return completion(.success(access.raw))
-        } else if let refresh = self.refreshToken, (refresh.expiresAt ?? Date.distantFuture) > Date() {
+    func token(_ completion: @escaping @Sendable (Result<String, Error>) -> Void) {
+        if let raw = self.tokens.withLock({ token, _ in token.flatMap { ($0.expiresAt ?? Date.distantFuture) > Date() ? $0.raw : nil } }) {
+            return completion(.success(raw))
+        } else if let refresh = self.tokens.withLock({ _, token in token.flatMap { ($0.expiresAt ?? Date.distantFuture) > Date() ? $0 : nil } }) {
             logger.trace("Refreshing token")
             self.provider.refreshToken(withRefreshToken: refresh, completion: { result in
                 switch result {
                 case let .failure(error):
                     return completion(.failure(error))
                 case let .success(access):
-                    self.accessToken = access
+                    self.tokens.withLock { token, _ in token = access }
                     return completion(.success(access.raw))
                 }
             })
@@ -92,8 +106,10 @@ final class AuthState {
                 case let .failure(error):
                     return completion(.failure(error))
                 case let .success((access, refresh)):
-                    self.accessToken = access
-                    self.refreshToken = refresh
+                    self.tokens.withLock { accessToken, refreshToken in
+                        accessToken = access
+                        refreshToken = refresh
+                    }
                     return completion(.success(access.raw))
                 }
             })
