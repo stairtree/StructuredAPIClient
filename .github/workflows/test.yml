@@ -12,23 +12,26 @@ jobs:
       matrix:
         xcode:
           - latest
-          - latest-stable
+          #- latest-stable
         destination:
           - 'platform=macOS,arch=x86_64'
           #- 'platform=macOS,arch=arm64'
-          - 'platform=iOS Simulator,OS=latest,name=iPhone 11 Pro'
+          - 'platform=iOS Simulator,OS=latest,name=iPhone 15 Pro'
           - 'platform=tvOS Simulator,OS=latest,name=Apple TV 4K'
-          - 'platform=watchOS Simulator,OS=latest,name=Apple Watch Series 6 - 44mm'
-    runs-on: macos-11.0
+          - 'platform=watchOS Simulator,OS=latest,name=Apple Watch Series 9 - 45mm'
+    runs-on: macos-13
     steps:
     - name: Select latest available Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: ${{ matrix.xcode }}
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Run tests for ${{ matrix.destination }}
-      run: xcodebuild test -scheme StructuredAPIClient-Package -enableThreadSanitizer YES -destination '${{ matrix.destination }}'
+      run: |
+        xcodebuild test -scheme StructuredAPIClient-Package \
+                        -enableThreadSanitizer YES \
+                        -destination '${{ matrix.destination }}'
   
   linux:
     runs-on: ubuntu-latest
@@ -36,31 +39,13 @@ jobs:
       fail-fast: false
       matrix:
         ver:
-          - swift:5.3
-          - swift:5.4
-          - swift:5.5
-          - swiftlang/swift:nightly-main
-        os:
-          - bionic
-          - focal
-          - amazonlinux2
+          - swift:5.9-jammy
+          - swiftlang/swift:nightly-5.10-jammy
+          - swiftlang/swift:nightly-main-jammy
     container:
-      image: ${{ matrix.ver }}-${{ matrix.os }}
+      image: ${{ matrix.ver }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Run tests for ${{ matrix.runner }}
-      run: swift test --enable-test-discovery --sanitize=thread
-
-  windows:
-    runs-on: windows-latest
-    steps:
-      - name: Install Swift toolchain
-        uses: compnerd/gha-setup-swift@main
-        with:
-          branch: swift-5.5-release
-          tag: 5.5-RELEASE
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Run tests
-        run: swift test
+      run: swift test --sanitize=thread
