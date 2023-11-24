@@ -13,7 +13,7 @@
 
 import Foundation
 #if canImport(FoundationNetworking)
-import FoundationNetworking
+@preconcurrency import FoundationNetworking
 #endif
 import Logging
 
@@ -60,3 +60,13 @@ internal extension DispatchTime {
         Double(self.uptimeNanoseconds) / 1_000_000
     }
 }
+
+#if !canImport(Darwin)
+extension NSLocking {
+    package func withLock<R>(_ body: @Sendable () throws -> R) rethrows -> R {
+        self.lock()
+        defer { self.unlock() }
+        return try body()
+    }
+}
+#endif

@@ -16,6 +16,8 @@ import Foundation
 import FoundationNetworking
 #endif
 
+#if canImport(Darwin)
+
 @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 extension URLSessionTransport {
     
@@ -38,3 +40,5 @@ extension URLSessionTransport {
         }
     }
 }
+
+#endif

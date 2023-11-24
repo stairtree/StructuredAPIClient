@@ -11,6 +11,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if !canImport(Darwin)
+@preconcurrency
+#endif
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
