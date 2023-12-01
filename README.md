@@ -28,7 +28,7 @@ For more information, browse the API documentation (_coming soon_).
 
 StructuredAPIClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is known to support the following operating system versions:
 
-* Ubuntu 18.04+
+* Ubuntu 20.04+
 * AmazonLinux2
 * macOS 10.12+
 * iOS 12+
