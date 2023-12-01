@@ -28,9 +28,9 @@ jobs:
           - platform: 'iOS Simulator'
             destination: 'OS=latest,name=iPhone 15 Pro'
           - platform: 'tvOS Simulator'
-            destination: 'OS=latest,name=Apple TV 4K'
+            destination: 'OS=latest,name=Apple TV 4K (3rd generation)'
           - platform: 'watchOS Simulator'
-            destination: 'OS=latest,name=Apple Watch Series 9 - 45mm'
+            destination: 'OS=latest,name=Apple Watch Series 9 (45mm)'
     name: ${{ matrix.platform }} Tests
     runs-on: macos-13
     steps:
