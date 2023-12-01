@@ -57,6 +57,7 @@ jobs:
       - name: Upload coverage data
         uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           swift: true
           verbose: true
           xcode: true
@@ -91,6 +92,9 @@ jobs:
             ./xcbeautify --is-ci --quiet --renderer github-actions
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.2
+        with:
+          cc_token: ${{ secrets.CODECOV_TOKEN }}
+          cc_verbose: true
 
   codeql:
     if: ${{ !(github.event.pull_request.draft || false) }}
