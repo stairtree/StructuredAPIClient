@@ -22,15 +22,25 @@ public final class URLSessionTransport: Transport {
     public let session: URLSession
     
     /// See `Transport.next`.
-    public var next: Transport? { nil }
+    public var next: (any Transport)? { nil }
     
     private final class LockedURLSessionDataTask: @unchecked Sendable {
         let lock = NSLock()
         var task: URLSessionDataTask?
         
-        var value: URLSessionDataTask? {
-            get { self.lock.withLock { self.task } }
-            set { self.lock.withLock { self.task = newValue } }
+        func setAndResume(_ newTask: URLSessionDataTask) {
+            self.lock.withLock {
+                assert(self.task == nil)
+                self.task = newTask
+                newTask.resume()
+            }
+        }
+        
+        func cancelAndClear() {
+            self.lock.withLock {
+                self.task?.cancel()
+                self.task = nil
+            }
         }
     }
     
@@ -46,8 +56,8 @@ public final class URLSessionTransport: Transport {
     ///   - request: The configured request to send
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
-    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, Error>) -> Void) {
-        self.task.value = session.dataTask(with: request) { (data, response, error) in
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
+        self.task.setAndResume(session.dataTask(with: request) { (data, response, error) in
             if let error {
                 return completion(.failure((error as? URLError)?.asTransportFailure ?? .unknown(error)))
             }
@@ -60,13 +70,11 @@ public final class URLSessionTransport: Transport {
             }
             
             completion(.success(httpResponse.asTransportResponse(withData: data)))
-        }
-        self.task.value?.resume()
+        })
     }
     
     public func cancel() {
-        self.task.value?.cancel()
-        self.task.value = nil
+        self.task.cancelAndClear()
     }
 }
 

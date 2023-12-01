@@ -27,7 +27,7 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
             func parseResponse(_ response: TransportResponse) throws -> String { .init(decoding: response.body, as: UTF8.self) }
         }
         
-        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
+        let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         
         let requestAssertions: @Sendable (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
@@ -52,7 +52,7 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
 
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
 
-        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
+        let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
 
         let requestAssertions: @Sendable (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)

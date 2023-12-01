@@ -20,14 +20,14 @@ import StructuredAPIClient
 private final class TestTransportData: @unchecked Sendable {
     let lock = NSLock()
     var history: [URLRequest]
-    var responses: [Result<TransportResponse, Error>]
+    var responses: [Result<TransportResponse, any Error>]
     
-    init(history: [URLRequest], responses: [Result<TransportResponse, Error>]) {
+    init(history: [URLRequest], responses: [Result<TransportResponse, any Error>]) {
         self.history = history
         self.responses = responses
     }
     
-    func withLock<R>(_ closure: @escaping @Sendable (inout [URLRequest], inout [Result<TransportResponse, Error>]) throws -> R) rethrows -> R {
+    func withLock<R>(_ closure: @escaping @Sendable (inout [URLRequest], inout [Result<TransportResponse, any Error>]) throws -> R) rethrows -> R {
         try self.lock.withLock {
             try closure(&self.history, &self.responses)
         }
@@ -39,12 +39,12 @@ public final class TestTransport: Transport {
     private let data: TestTransportData
     let assertRequest: @Sendable (URLRequest) -> Void
 
-    public init(responses: [Result<TransportResponse, Error>], assertRequest: @escaping @Sendable (URLRequest) -> Void = { _ in }) {
+    public init(responses: [Result<TransportResponse, any Error>], assertRequest: @escaping @Sendable (URLRequest) -> Void = { _ in }) {
         self.data = .init(history: [], responses: responses)
         self.assertRequest = assertRequest
     }
 
-    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, Error>) -> Void) {
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
         self.assertRequest(request)
         self.data.withLock { history, responses in
             history.append(request)
@@ -56,5 +56,5 @@ public final class TestTransport: Transport {
         }
     }
     
-    public var next: Transport? { nil }
+    public var next: (any Transport)? { nil }
 }

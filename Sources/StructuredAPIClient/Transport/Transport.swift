@@ -47,12 +47,12 @@ public protocol Transport: Sendable {
     ///   - request: The request to be sent.
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server, or an error indicating a transport-level failure.
-    func send(request: URLRequest, completion: @escaping @Sendable (_ result: Result<TransportResponse, Error>) -> Void)
+    func send(request: URLRequest, completion: @escaping @Sendable (_ result: Result<TransportResponse, any Error>) -> Void)
     
     /// The next Transport that the request is being forwarded to.
     ///
     /// If `nil`, this should be the final `Transport`.
-    var next: Transport? { get }
+    var next: (any Transport)? { get }
     
     /// Cancel the request.
     ///

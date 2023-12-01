@@ -14,6 +14,14 @@
 
 import PackageDescription
 
+let swiftSettings: [SwiftSetting] = [
+    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("ConciseMagicFile"),
+    .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableExperimentalFeature("StrictConcurrency=complete"),
+]
+
 let package = Package(
     name: "StructuredAPIClient",
     products: [
@@ -32,21 +40,22 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "HTTPTypes", package: "swift-http-types"),
             ],
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            swiftSettings: swiftSettings
         ),
         .target(
             name: "StructuredAPIClientTestSupport",
             dependencies: [
                 .target(name: "StructuredAPIClient"),
             ],
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            swiftSettings: swiftSettings
         ),
         .testTarget(
             name: "StructuredAPIClientTests",
             dependencies: [
                 .target(name: "StructuredAPIClient"),
                 .target(name: "StructuredAPIClientTestSupport"),
-            ]
+            ],
+            swiftSettings: swiftSettings
         ),
     ]
 )

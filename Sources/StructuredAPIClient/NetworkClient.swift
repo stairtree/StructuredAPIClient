@@ -19,18 +19,18 @@ import Logging
 
 public final class NetworkClient {
     public let baseURL: URL
-    let transport: () -> Transport
+    let transport: () -> any Transport
     let logger: Logger
 
     /// Create a new `NetworkClient` from a base URL, a `Transport`, and an optional `Logger`.
-    public init(baseURL: URL, transport: @escaping @Sendable @autoclosure () -> Transport = URLSessionTransport(.shared), logger: Logger? = nil) {
+    public init(baseURL: URL, transport: @escaping @Sendable @autoclosure () -> any Transport = URLSessionTransport(.shared), logger: Logger? = nil) {
         self.baseURL = baseURL
         self.transport = transport
         self.logger = logger ?? Logger(label: "NetworkClient")
     }
 
     /// Fetch any `NetworkRequest` type and return the response asynchronously.
-    public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping @Sendable (Result<Request.ResponseDataType, Error>) -> Void) {
+    public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping @Sendable (Result<Request.ResponseDataType, any Error>) -> Void) {
         let start = DispatchTime.now()
         // Construct the URLRequest
         do {
