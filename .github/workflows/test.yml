@@ -1,66 +1,134 @@
-name: test
+name: Tests
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  pull_request: { types: [opened, reopened, synchronize, ready_for_review] }
+  push: { branches: [ main ] }
+env:
+  LOG_LEVEL: info
 
 jobs:
   appleos:
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
         xcode:
           - latest
-          - latest-stable
-        destination:
-          - 'platform=macOS,arch=x86_64'
-          #- 'platform=macOS,arch=arm64'
-          - 'platform=iOS Simulator,OS=latest,name=iPhone 11 Pro'
-          - 'platform=tvOS Simulator,OS=latest,name=Apple TV 4K'
-          - 'platform=watchOS Simulator,OS=latest,name=Apple Watch Series 6 - 44mm'
-    runs-on: macos-11.0
+          #- latest-stable
+        platform:
+          - 'macOS'
+          - 'iOS Simulator'
+          - 'tvOS Simulator'
+          - 'watchOS Simulator'
+        include:
+          - platform: 'macOS'
+            destination: 'arch=x86_64'
+          - platform: 'iOS Simulator'
+            destination: 'OS=latest,name=iPhone 15 Pro'
+          - platform: 'tvOS Simulator'
+            destination: 'OS=latest,name=Apple TV 4K (3rd generation)'
+          - platform: 'watchOS Simulator'
+            destination: 'OS=latest,name=Apple Watch Series 9 (45mm)'
+    name: ${{ matrix.platform }} Tests
+    runs-on: macos-13
     steps:
-    - name: Select latest available Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: ${{ matrix.xcode }}
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Run tests for ${{ matrix.destination }}
-      run: xcodebuild test -scheme StructuredAPIClient-Package -enableThreadSanitizer YES -destination '${{ matrix.destination }}'
+      - name: Select latest available Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode }}
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        env:
+          DESTINATION: ${{ format('platform={0},{1}', matrix.platform, matrix.destination) }}
+        run: |
+          set -o pipefail && \
+            xcodebuild test -scheme StructuredAPIClient-Package \
+                            -enableThreadSanitizer YES \
+                            -enableCodeCoverage YES \
+                            -disablePackageRepositoryCache \
+                            -resultBundlePath "${GITHUB_WORKSPACE}/results.resultBundle" \
+                            -destination "${DESTINATION}" |
+            xcbeautify --is-ci --quiet --renderer github-actions 
+      - name: Upload coverage data
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          swift: true
+          verbose: true
+          xcode: true
+          xcode_archive_path: ${{ github.workspace }}/results.resultBundle
   
   linux:
-    runs-on: ubuntu-latest
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
-        ver:
-          - swift:5.3
-          - swift:5.4
-          - swift:5.5
-          - swiftlang/swift:nightly-main
-        os:
-          - bionic
-          - focal
-          - amazonlinux2
-    container:
-      image: ${{ matrix.ver }}-${{ matrix.os }}
+        swift-image:
+          - swift:5.9-jammy
+          - swiftlang/swift:nightly-5.10-jammy
+          - swiftlang/swift:nightly-main-jammy
+    name: Linux ${{ matrix.swift-image }} Tests
+    runs-on: ubuntu-latest
+    container: ${{ matrix.swift-image }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Run tests for ${{ matrix.runner }}
-      run: swift test --enable-test-discovery --sanitize=thread
-
-  windows:
-    runs-on: windows-latest
-    steps:
-      - name: Install Swift toolchain
-        uses: compnerd/gha-setup-swift@main
-        with:
-          branch: swift-5.5-release
-          tag: 5.5-RELEASE
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install xcbeautify
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y curl
+          curl -fsSLO 'https://github.com/tuist/xcbeautify/releases/download/1.0.1/xcbeautify-1.0.1-x86_64-unknown-linux-gnu.tar.xz'
+          tar -x -J -f xcbeautify-1.0.1-x86_64-unknown-linux-gnu.tar.xz
       - name: Run tests
-        run: swift test
+        shell: bash
+        run: |
+          set -o pipefail && \
+            swift test --sanitize=thread --enable-code-coverage |
+            ./xcbeautify --is-ci --quiet --renderer github-actions
+      - name: Upload coverage data
+        uses: vapor/swift-codecov-action@v0.2
+        with:
+          cc_token: ${{ secrets.CODECOV_TOKEN }}
+          cc_verbose: true
+
+  codeql:
+    if: ${{ !(github.event.pull_request.draft || false) }}
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    container:
+      image: swift:5.9-jammy
+    permissions: { actions: write, contents: read, security-events: write }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Mark repo safe
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with: { languages: swift }
+      - name: Perform build
+        run: swift build
+      - name: Run CodeQL analyze
+        uses: github/codeql-action/analyze@v2
+
+  dependency-graph:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    container: swift:jammy
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up dependencies
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          apt-get update && apt-get install -y curl
+      - name: Submit dependency graph
+        uses: vapor-community/swift-dependency-submission@v0.1

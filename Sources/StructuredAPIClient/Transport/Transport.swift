@@ -15,20 +15,21 @@ import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
+import HTTPTypes
 
 /// A successful response from a `Transport`.
-public struct TransportResponse {
+public struct TransportResponse: Sendable {
     /// The received HTTP status code.
-    public let status: HTTPStatusCode
+    public let status: HTTPResponse.Status
     
     /// Any received HTTP headers, if the transport in use provides them.
-    public let headers: [String: String]
+    public let headers: HTTPFields
     
     /// The raw HTTP response body. If there was no response body, this will have a zero length.
     public let body: Data
     
     /// Create a new `TransportResponse`. Intended for use by `Transport` implementations.
-    public init(status: HTTPStatusCode, headers: [String: String], body: Data) {
+    public init(status: HTTPResponse.Status, headers: HTTPFields, body: Data) {
         self.status = status
         self.headers = headers
         self.body = body
@@ -36,7 +37,7 @@ public struct TransportResponse {
 }
 
 /// A `Transport` maps a `URLRequest` to a `Status` and `Data` pair asynchronously.
-public protocol Transport {
+public protocol Transport: Sendable {
     /// Sends the request and delivers the response asynchronously to a completion handler.
     ///
     /// Transports should make an effort to provide the most specific errors possible for failures. In particular, the
@@ -46,12 +47,12 @@ public protocol Transport {
     ///   - request: The request to be sent.
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server, or an error indicating a transport-level failure.
-    func send(request: URLRequest, completion: @escaping (_ result: Result<TransportResponse, Error>) -> Void)
+    func send(request: URLRequest, completion: @escaping @Sendable (_ result: Result<TransportResponse, any Error>) -> Void)
     
     /// The next Transport that the request is being forwarded to.
     ///
     /// If `nil`, this should be the final `Transport`.
-    var next: Transport? { get }
+    var next: (any Transport)? { get }
     
     /// Cancel the request.
     ///

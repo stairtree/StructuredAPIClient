@@ -16,7 +16,7 @@ import Foundation
 import FoundationNetworking
 #endif
 
-#if compiler(>=5.5) && canImport(_Concurrency) && canImport(Darwin)
+#if canImport(Darwin)
 
 @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 extension URLSessionTransport {
@@ -31,14 +31,10 @@ extension URLSessionTransport {
                 throw TransportFailure.network(URLError(.unsupportedURL))
             }
             return httpResponse.asTransportResponse(withData: data)
-            
         } catch let netError as URLError {
-            if netError.code == .cancelled { throw TransportFailure.cancelled }
-            throw TransportFailure.network(netError)
-            
+            throw netError.asTransportFailure
         } catch let error as TransportFailure {
             throw error
-            
         } catch {
             throw TransportFailure.unknown(error)
         }

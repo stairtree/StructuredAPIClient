@@ -16,8 +16,6 @@ import Foundation
 import FoundationNetworking
 #endif
 
-#if compiler(>=5.5) && canImport(_Concurrency) && canImport(Darwin)
-
 @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 extension NetworkClient {
    public func load<Request: NetworkRequest>(_ req: Request) async throws -> Request.ResponseDataType {
@@ -29,5 +27,3 @@ extension NetworkClient {
         }
     }
 }
-
-#endif

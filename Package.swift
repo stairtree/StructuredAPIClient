@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the StructuredAPIClient open source project
@@ -14,6 +14,14 @@
 
 import PackageDescription
 
+let swiftSettings: [SwiftSetting] = [
+    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("ExistentialAny"),
+    .enableUpcomingFeature("ConciseMagicFile"),
+    .enableUpcomingFeature("DisableOutwardActorInference"),
+    .enableExperimentalFeature("StrictConcurrency=complete"),
+]
+
 let package = Package(
     name: "StructuredAPIClient",
     products: [
@@ -22,20 +30,32 @@ let package = Package(
     ],
     dependencies: [
         // Swift logging API
-        .package(url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.4.0")),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
+        .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.0"),
     ],
     targets: [
         .target(
             name: "StructuredAPIClient",
-            dependencies: [.product(name: "Logging", package: "swift-log")]),
+            dependencies: [
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ],
+            swiftSettings: swiftSettings
+        ),
         .target(
             name: "StructuredAPIClientTestSupport",
-            dependencies: [.target(name: "StructuredAPIClient")]),
+            dependencies: [
+                .target(name: "StructuredAPIClient"),
+            ],
+            swiftSettings: swiftSettings
+        ),
         .testTarget(
             name: "StructuredAPIClientTests",
             dependencies: [
                 .target(name: "StructuredAPIClient"),
                 .target(name: "StructuredAPIClientTestSupport"),
-            ]),
+            ],
+            swiftSettings: swiftSettings
+        ),
     ]
 )

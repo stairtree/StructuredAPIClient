@@ -13,18 +13,39 @@
 
 import Foundation
 #if canImport(FoundationNetworking)
-import FoundationNetworking
+@preconcurrency import FoundationNetworking
 #endif
+import HTTPTypes
 
 public final class URLSessionTransport: Transport {
     /// The actual `URLSession` instance used to create request tasks.
     public let session: URLSession
     
     /// See `Transport.next`.
-    public var next: Transport? { nil }
+    public var next: (any Transport)? { nil }
+    
+    private final class LockedURLSessionDataTask: @unchecked Sendable {
+        let lock = NSLock()
+        var task: URLSessionDataTask?
+        
+        func setAndResume(_ newTask: URLSessionDataTask) {
+            self.lock.withLock {
+                assert(self.task == nil)
+                self.task = newTask
+                newTask.resume()
+            }
+        }
+        
+        func cancelAndClear() {
+            self.lock.withLock {
+                self.task?.cancel()
+                self.task = nil
+            }
+        }
+    }
     
     /// An in-progress data task representing a request in flight
-    private var task: URLSessionDataTask!
+    private let task = LockedURLSessionDataTask()
     
     public init(_ session: URLSession) {
         self.session = session
@@ -35,15 +56,13 @@ public final class URLSessionTransport: Transport {
     ///   - request: The configured request to send
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
-    public func send(request: URLRequest, completion: @escaping (Result<TransportResponse, Error>) -> Void) {
-        self.task = session.dataTask(with: request) { (data, response, error) in
-            switch error.map({ $0 as? URLError }) {
-                case .some(.some(let netError)) where netError.code == .cancelled: return completion(.failure(TransportFailure.cancelled))
-                case .some(.some(let netError)): return completion(.failure(TransportFailure.network(netError)))
-                case .some(.none): return completion(.failure(TransportFailure.unknown(error!)))
-                case .none: break // no error
+    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
+        self.task.setAndResume(session.dataTask(with: request) { (data, response, error) in
+            if let error {
+                return completion(.failure((error as? URLError)?.asTransportFailure ?? .unknown(error)))
             }
-            guard let response = response else {
+            
+            guard let response else {
                 return completion(.failure(TransportFailure.network(URLError(.unknown))))
             }
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -51,13 +70,20 @@ public final class URLSessionTransport: Transport {
             }
             
             completion(.success(httpResponse.asTransportResponse(withData: data)))
-        }
-        self.task.resume()
+        })
     }
     
     public func cancel() {
-        self.task.cancel()
-        self.task = nil
+        self.task.cancelAndClear()
+    }
+}
+
+extension URLError {
+    var asTransportFailure: TransportFailure {
+        switch self.code {
+        case .cancelled:  .cancelled
+        default:         .network(self)
+        }
     }
 }
 
@@ -69,11 +95,14 @@ extension URLRequest {
 
 extension HTTPURLResponse {
     func asTransportResponse(withData data: Data?) -> TransportResponse {
-        return TransportResponse(
-            status: HTTPStatusCode(rawValue: self.statusCode) ?? .internalServerError,
-            headers: .init(uniqueKeysWithValues: self.allHeaderFields.compactMap { k, v in
-                guard let name = k.base as? String, let value = v as? String else { return nil }
-                return (name, value)
+        TransportResponse(
+            status: HTTPResponse.Status(code: self.statusCode),
+            headers: HTTPFields(self.allHeaderFields.compactMap { k, v in
+                guard let name = (k.base as? String).flatMap(HTTPField.Name.init(_:)),
+                      let value = v as? String
+                else { return nil }
+                
+                return HTTPField(name: name, value: value)
             }),
             body: data ?? .init()
         )

@@ -11,6 +11,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if !canImport(Darwin)
+@preconcurrency
+#endif
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -20,7 +23,7 @@ public enum TransportFailure: Error, Equatable {
     case invalidRequest(baseURL: URL, components: URLComponents?)
     case network(URLError)
     case cancelled
-    case unknown(Error)
+    case unknown(any Error)
     
     public static func ==(lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {

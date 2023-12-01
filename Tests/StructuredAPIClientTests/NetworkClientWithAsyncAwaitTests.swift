@@ -18,8 +18,6 @@ import FoundationNetworking
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
 
-#if compiler(>=5.5) && canImport(_Concurrency) && canImport(Darwin)
-
 @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 final class NetworkClientWithAsyncAwaitTests: XCTestCase {
     
@@ -29,9 +27,9 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
             func parseResponse(_ response: TransportResponse) throws -> String { .init(decoding: response.body, as: UTF8.self) }
         }
         
-        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
+        let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         
-        let requestAssertions: (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
         }
         
@@ -54,9 +52,9 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
 
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
 
-        let response: Result<TransportResponse, Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
+        let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
 
-        let requestAssertions: (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (URLRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
             XCTAssertEqual($0.allHTTPHeaderFields?["Authorization"], "Bearer abc")
         }
@@ -75,5 +73,3 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
         XCTAssertEqual(client.baseURL.absoluteString, "https://test.somewhere.com")
     }
 }
-
-#endif

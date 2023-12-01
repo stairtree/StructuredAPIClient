@@ -19,20 +19,20 @@ import StructuredAPIClient
 
 
 /// A `TokenProvider` that returns a given accessToken and refreshToken for the respective requests.
-public final class TestTokenProvider: TokenProvider {
-    let accessToken: Token
-    let refreshToken: Token
+public final class TestTokenProvider: TokenProvider, Sendable {
+    let accessToken: any Token
+    let refreshToken: any Token
 
-    public init(accessToken: Token, refreshToken: Token) {
+    public init(accessToken: any Token, refreshToken: any Token) {
         self.accessToken = accessToken
         self.refreshToken = refreshToken
     }
 
-    public func fetchToken(completion: (Result<(Token, Token), Error>) -> Void) {
+    public func fetchToken(completion: (Result<(any Token, any Token), any Error>) -> Void) {
         completion(.success((accessToken, refreshToken)))
     }
 
-    public func refreshToken(withRefreshToken: Token, completion: (Result<Token, Error>) -> Void) {
+    public func refreshToken(withRefreshToken: any Token, completion: (Result<any Token, any Error>) -> Void) {
         completion(.success(accessToken))
     }
 }
