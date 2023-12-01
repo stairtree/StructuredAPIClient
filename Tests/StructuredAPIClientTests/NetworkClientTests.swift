@@ -18,7 +18,7 @@ import FoundationNetworking
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
 
-final class LockedResult<R>: @unchecked Sendable {
+final class LockedResult<R: Sendable>: @unchecked Sendable {
     let lock = NSLock()
     var result: Result<R, any Error>?
     
