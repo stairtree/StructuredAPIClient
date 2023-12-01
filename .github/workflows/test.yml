@@ -51,7 +51,7 @@ jobs:
                             -enableThreadSanitizer YES \
                             -enableCodeCoverage YES \
                             -disablePackageRepositoryCache \
-                            -resultBundlePath "${GITHUB_WORKSPACE}" \
+                            -resultBundlePath "${GITHUB_WORKSPACE}/results.resultBundle" \
                             -destination "${DESTINATION}" |
             xcbeautify --is-ci --quiet --renderer github-actions 
       - name: Upload coverage data
@@ -60,7 +60,7 @@ jobs:
           swift: true
           verbose: true
           xcode: true
-          xcode_archive_path: ${{ github.workspace }}
+          xcode_archive_path: ${{ github.workspace }}/results.resultBundle
   
   linux:
     if: ${{ !(github.event.pull_request.draft || false) }}
