@@ -46,4 +46,4 @@ dependencies: [
 
 ---
 
-Inspired by blog posts by [Rob Napier](https://robnapier.net) and [Soroush Khanlou](http://khanlou.com), as well as the [Testing Tips & Tricks](https://developer.apple.com/videos/play/wwdc2018/417/) WWDC talk. Version 2.0 revised for full Concurrency support by @gwynne.
+Inspired by blog posts by [Rob Napier](https://robnapier.net) and [Soroush Khanlou](http://khanlou.com), as well as the [Testing Tips & Tricks](https://developer.apple.com/videos/play/wwdc2018/417/) WWDC talk. Version 2.0 revised for full Concurrency support by [@gwynne](https://github.com/gwynne).
