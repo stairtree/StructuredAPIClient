@@ -24,6 +24,12 @@ let swiftSettings: [SwiftSetting] = [
 
 let package = Package(
     name: "StructuredAPIClient",
+    platforms: [
+        .macOS(.v10_15),
+        .iOS(.v13),
+        .watchOS(.v6),
+        .tvOS(.v13),
+    ],
     products: [
         .library(name: "StructuredAPIClient", targets: ["StructuredAPIClient"]),
         .library(name: "StructuredAPIClientTestSupport", targets: ["StructuredAPIClientTestSupport"]),
@@ -31,7 +37,7 @@ let package = Package(
     dependencies: [
         // Swift logging API
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
-        .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.2"),
     ],
     targets: [
         .target(
