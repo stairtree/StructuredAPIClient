@@ -38,6 +38,7 @@ let package = Package(
         // Swift logging API
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.2"),
+        .package(url: "https://github.com/stairtree/async-helpers.git", from: "0.2.0"),
     ],
     targets: [
         .target(
@@ -45,6 +46,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "HTTPTypes", package: "swift-http-types"),
+                .product(name: "AsyncHelpers", package: "async-helpers"),
             ],
             swiftSettings: swiftSettings
         ),
