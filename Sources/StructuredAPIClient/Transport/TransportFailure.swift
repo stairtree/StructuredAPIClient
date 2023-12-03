@@ -25,13 +25,18 @@ public enum TransportFailure: Error, Equatable {
     case cancelled
     case unknown(any Error)
     
-    public static func ==(lhs: Self, rhs: Self) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-            case let (.invalidRequest(lurl, lcomp), .invalidRequest(rurl, rcomp)): return lurl == rurl && lcomp == rcomp
-            case let (.network(lerror), .network(rerror)): return lerror == rerror
-            case     (.cancelled, .cancelled): return true
-            case let (.unknown(lerror), .unknown(rerror)): return (lerror as NSError) == (rerror as NSError)
-            default: return false
+            case let (.invalidRequest(lurl, lcomp), .invalidRequest(rurl, rcomp)):
+                lurl == rurl && lcomp == rcomp
+            case let (.network(lerror), .network(rerror)):
+                lerror == rerror
+            case (.cancelled, .cancelled):
+                true
+            case let (.unknown(lerror), .unknown(rerror)):
+                (lerror as NSError) == (rerror as NSError)
+            default:
+                false
         }
     }
 }

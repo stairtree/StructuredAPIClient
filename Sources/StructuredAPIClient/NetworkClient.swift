@@ -29,19 +29,22 @@ public final class NetworkClient {
         self.logger = logger ?? Logger(label: "NetworkClient")
     }
 
-    /// Fetch any `NetworkRequest` type and return the response asynchronously.
+    /// Fetch any ``NetworkRequest`` type and return the response asynchronously.
     public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping @Sendable (Result<Request.ResponseDataType, any Error>) -> Void) {
-        let start = DispatchTime.now()
+        let start = Date()
         // Construct the URLRequest
         do {
             let logger = self.logger
-            let urlRequest = try req.makeRequest(baseURL: baseURL)
-            logger.trace("\(urlRequest.debugString)")
+            let urlRequest = try req.makeRequest(baseURL: self.baseURL)
 
             // Send it to the transport
-            transport().send(request: urlRequest) { result in
-                // TODO: Deliver a more accurate split of the different phases of the request
-                defer { logger.trace("Request '\(urlRequest.debugString)' took \(String(format: "%.4f", (.now() - start).milliseconds))ms") }
+            self.transport().send(request: urlRequest) { result in
+                let middle = Date()
+                logger.trace("Request '\(urlRequest.debugString)' received response in \(start.millisecondsBeforeNowFormatted)ms")
+                defer {
+                    logger.trace("Request '\(urlRequest.debugString)' was processed in \(middle.millisecondsBeforeNowFormatted)ms")
+                    logger.trace("Request '\(urlRequest.debugString)' took a total of \(start.millisecondsBeforeNowFormatted)ms")
+                }
                 
                 completion(result.flatMap { resp in .init { try req.parseResponse(resp) } })
             }
@@ -51,22 +54,33 @@ public final class NetworkClient {
     }
 }
 
-internal extension DispatchTime {
-    static func -(lhs: Self, rhs: Self) -> Self {
-        .init(uptimeNanoseconds: lhs.uptimeNanoseconds - rhs.uptimeNanoseconds)
-    }
-    
-    var milliseconds: Double {
-        Double(self.uptimeNanoseconds) / 1_000_000
+extension NetworkClient {
+    /// Fetch any ``NetworkRequest`` type asynchronously and return the response.
+    public func load<Request: NetworkRequest>(_ req: Request) async throws -> Request.ResponseDataType {
+        try await withCheckedThrowingContinuation { continuation in
+            self.load(req) {
+                continuation.resume(with: $0)
+            }
+        }
     }
 }
 
-#if !canImport(Darwin)
-extension NSLocking {
-    package func withLock<R>(_ body: @Sendable () throws -> R) rethrows -> R {
-        self.lock()
-        defer { self.unlock() }
-        return try body()
+private extension Date {
+    var millisecondsBeforeNowFormatted: String {
+        #if canImport(Darwin)
+        if #available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *) {
+            return (self.timeIntervalSinceNow * -1000.0).formatted(.number.precision(.fractionLength(4...4)).grouping(.never))
+        }
+        #endif
+        
+        // This is both easier and much faster than using NumberFormatter
+        let msInterval = (self.timeIntervalSinceNow * -10_000_000.0).rounded(.toNearestOrEven) / 10_000.0
+        return "\(Int(msInterval))\("\(msInterval)0000".drop(while: { $0 != "." }).prefix(5))"
     }
 }
-#endif
+
+internal extension URLRequest {
+    var debugString: String {
+        "\(self.httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
+    }
+}

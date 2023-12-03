@@ -17,8 +17,8 @@ import FoundationNetworking
 #endif
 import StructuredAPIClient
 
-/// A `NetworkRequest` that simply requests the base URL (optionally with additional headers added) and expects UTF-8
-/// `String`s as responses.
+/// A ``NetworkRequest`` that simply requests the base URL (optionally with additional headers added)
+/// and expects UTF-8 `String`s as responses.
 public struct TestRequest: NetworkRequest {
     private let extraHeaders: [String: String]
     
@@ -27,7 +27,7 @@ public struct TestRequest: NetworkRequest {
     }
     
     public func parseResponse(_ response: TransportResponse) throws -> String {
-        return String(decoding: response.body, as: UTF8.self)
+        String(decoding: response.body, as: UTF8.self)
     }
     
     public func makeRequest(baseURL: URL) throws -> URLRequest {

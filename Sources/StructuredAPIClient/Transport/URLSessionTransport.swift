@@ -16,16 +16,17 @@ import Foundation
 @preconcurrency import FoundationNetworking
 #endif
 import HTTPTypes
+import AsyncHelpers
 
 public final class URLSessionTransport: Transport {
     /// The actual `URLSession` instance used to create request tasks.
     public let session: URLSession
     
-    /// See `Transport.next`.
+    // See `Transport.next`.
     public var next: (any Transport)? { nil }
     
     private final class LockedURLSessionDataTask: @unchecked Sendable {
-        let lock = NSLock()
+        let lock = Locking.FastLock()
         var task: URLSessionDataTask?
         
         func setAndResume(_ newTask: URLSessionDataTask) {
@@ -57,7 +58,7 @@ public final class URLSessionTransport: Transport {
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
     public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
-        self.task.setAndResume(session.dataTask(with: request) { (data, response, error) in
+        self.task.setAndResume(self.session.dataTask(with: request) { (data, response, error) in
             if let error {
                 return completion(.failure((error as? URLError)?.asTransportFailure ?? .unknown(error)))
             }
@@ -81,15 +82,9 @@ public final class URLSessionTransport: Transport {
 extension URLError {
     var asTransportFailure: TransportFailure {
         switch self.code {
-        case .cancelled:  .cancelled
-        default:         .network(self)
+        case .cancelled: .cancelled
+        default: .network(self)
         }
-    }
-}
-
-extension URLRequest {
-    var debugString: String {
-        "\(httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
     }
 }
 
@@ -98,9 +93,7 @@ extension HTTPURLResponse {
         TransportResponse(
             status: HTTPResponse.Status(code: self.statusCode),
             headers: HTTPFields(self.allHeaderFields.compactMap { k, v in
-                guard let name = (k.base as? String).flatMap(HTTPField.Name.init(_:)),
-                      let value = v as? String
-                else { return nil }
+                guard let name = (k.base as? String).flatMap(HTTPField.Name.init(_:)), let value = v as? String else { return nil }
                 
                 return HTTPField(name: name, value: value)
             }),
