@@ -18,9 +18,11 @@ import FoundationNetworking
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
 
-@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 final class NetworkClientWithAsyncAwaitTests: XCTestCase {
-    
+    override class func setUp() {
+        XCTAssert(isLoggingConfigured)
+    }
+        
     func testNetworkClientWithAsyncAwait() async throws {
         struct TestRequest: NetworkRequest {
             func makeRequest(baseURL: URL) throws -> URLRequest { URLRequest(url: baseURL) }

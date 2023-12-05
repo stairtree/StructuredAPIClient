@@ -17,20 +17,20 @@ import FoundationNetworking
 #endif
 import HTTPTypes
 
-/// Any request that can be sent as a `URLRequest` with a `NetworkClient`, and returns a response.
+/// Any request that can be sent as a `URLRequest` with a ``NetworkClient``, and returns a response.
 public protocol NetworkRequest: Sendable {
     /// The decoded data type that represents the response.
     associatedtype ResponseDataType: Sendable
     
     /// Returns a request based on the given base URL.
-    /// - Parameter baseURL: The `NetworkClient`'s base URL.
+    /// - Parameter baseURL: The ``NetworkClient``'s base URL.
     func makeRequest(baseURL: URL) throws -> URLRequest
     
-    /// Processes a response returned from the transport and either returns the associated response type or throws an
-    /// application-specific error.
+    /// Processes a response returned from the transport and either returns the associated response type
+    /// or throws an application-specific error.
     ///
     /// - Parameters:
-    ///   - response: A `TransportResponse` containing the response to a request.
+    ///   - response: A ``TransportResponse`` containing the response to a request.
     func parseResponse(_ response: TransportResponse) throws -> ResponseDataType
 }
 

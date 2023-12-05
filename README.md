@@ -11,7 +11,7 @@
 </a>
 
 <a href="https://codecov.io/gh/stairtree/StructuredAPIClient">
-<img src="https://img.shields.io/codecov/c/gh/stairtree/StructuredAPIClient?style=plastic&logo=codecov&label=codecov&token=MD69L97AOO">
+<img src="https://img.shields.io/codecov/c/gh/stairtree/StructuredAPIClient?style=plastic&logo=codecov&label=codecov">
 </a>
 
 <a href="https://swift.org">

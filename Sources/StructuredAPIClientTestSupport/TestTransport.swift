@@ -16,9 +16,10 @@ import Foundation
 @preconcurrency import FoundationNetworking
 #endif
 import StructuredAPIClient
+import AsyncHelpers
 
 private final class TestTransportData: @unchecked Sendable {
-    let lock = NSLock()
+    let lock = Locking.FastLock()
     var history: [URLRequest]
     var responses: [Result<TransportResponse, any Error>]
     
@@ -34,7 +35,7 @@ private final class TestTransportData: @unchecked Sendable {
     }
 }
 
-// A `Transport` that synchronously returns static values for tests
+/// A ``Transport`` that synchronously returns static values for tests
 public final class TestTransport: Transport {
     private let data: TestTransportData
     let assertRequest: @Sendable (URLRequest) -> Void

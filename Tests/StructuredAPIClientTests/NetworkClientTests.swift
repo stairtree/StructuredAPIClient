@@ -17,9 +17,11 @@ import FoundationNetworking
 #endif
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
+import AsyncHelpers
+import Logging
 
 final class LockedResult<R: Sendable>: @unchecked Sendable {
-    let lock = NSLock()
+    let lock = Locking.FastLock()
     var result: Result<R, any Error>?
     
     var value: Result<R, any Error>? {
@@ -30,6 +32,10 @@ final class LockedResult<R: Sendable>: @unchecked Sendable {
 
 final class NetworkClientTests: XCTestCase {
     private static let baseTestURL = URL(string: "https://test.somewhere.com")!
+    
+    override class func setUp() {
+        XCTAssert(isLoggingConfigured)
+    }
     
     private func _runTest<R: NetworkRequest>(
         request: R, client: NetworkClient,
@@ -183,3 +189,16 @@ final class NetworkClientTests: XCTestCase {
         try self.runTest(request: TestRequest(extraHeaders: ["H1": "1-3"]), client: client, expecting: "Test")
     }
 }
+
+func env(_ name: String) -> String? {
+    ProcessInfo.processInfo.environment[name]
+}
+
+let isLoggingConfigured: Bool = {
+    LoggingSystem.bootstrap { label in
+        var handler = StreamLogHandler.standardOutput(label: label)
+        handler.logLevel = env("LOG_LEVEL").flatMap { Logger.Level(rawValue: $0) } ?? .trace
+        return handler
+    }
+    return true
+}()
