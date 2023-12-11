@@ -25,31 +25,8 @@ public final class URLSessionTransport: Transport {
     // See `Transport.next`.
     public var next: (any Transport)? { nil }
     
-    private final class LockedURLSessionDataTask: @unchecked Sendable {
-        let lock = Locking.FastLock()
-        var task: URLSessionDataTask?
-        
-        func setAndResume(_ newTask: URLSessionDataTask) {
-            self.lock.withLock {
-                assert(self.task == nil)
-                self.task = newTask
-                newTask.resume()
-            }
-        }
-        
-        func cancelAndClear() {
-            self.lock.withLock {
-                self.task?.cancel()
-                self.task = nil
-            }
-        }
-    }
-    
-    /// An in-progress data task representing a request in flight
-    private let task = LockedURLSessionDataTask()
-    
     public init(_ session: URLSession) {
-        self.session = session
+        self.session = .init(configuration: session.configuration, delegate: session.delegate, delegateQueue: session.delegateQueue)
     }
     
     /// Sends the request using a `URLSessionDataTask`
@@ -58,7 +35,7 @@ public final class URLSessionTransport: Transport {
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server.
     public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
-        self.task.setAndResume(self.session.dataTask(with: request) { (data, response, error) in
+        self.session.dataTask(with: request) { data, response, error in
             if let error {
                 return completion(.failure((error as? URLError)?.asTransportFailure ?? .unknown(error)))
             }
@@ -71,11 +48,13 @@ public final class URLSessionTransport: Transport {
             }
             
             completion(.success(httpResponse.asTransportResponse(withData: data)))
-        })
+        }.resume()
     }
     
     public func cancel() {
-        self.task.cancelAndClear()
+        self.session.getAllTasks {
+            $0.forEach { $0.cancel() }
+        }
     }
 }
 
