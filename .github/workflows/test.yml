@@ -110,12 +110,12 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with: { languages: swift }
       - name: Perform build
         run: swift build
       - name: Run CodeQL analyze
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
   dependency-graph:
     if: ${{ github.event_name == 'push' }}
