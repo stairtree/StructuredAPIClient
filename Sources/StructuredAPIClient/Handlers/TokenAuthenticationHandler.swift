@@ -16,7 +16,6 @@ import Foundation
 @preconcurrency import FoundationNetworking
 #endif
 import Logging
-import AsyncHelpers
 
 // Handle token auth and add appropriate auth headers to requests sent by an existing ``Transport``.
 public final class TokenAuthenticationHandler: Transport {
@@ -59,7 +58,7 @@ public protocol Token: Sendable {
 }
 
 final class AuthState: @unchecked Sendable {
-    private let tokens: Locking.LockedValueBox<(accessToken: (any Token)?, refreshToken: (any Token)?)>
+    private let tokens: NIOLockedValueBox<(accessToken: (any Token)?, refreshToken: (any Token)?)>
     let provider: any TokenProvider
     let logger: Logger
 

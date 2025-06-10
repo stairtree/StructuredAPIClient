@@ -16,7 +16,6 @@ import Foundation
 @preconcurrency import FoundationNetworking
 #endif
 import HTTPTypes
-import AsyncHelpers
 
 public final class URLSessionTransport: Transport {
     /// The actual `URLSession` instance used to create request tasks.

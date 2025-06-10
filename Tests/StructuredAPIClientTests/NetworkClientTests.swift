@@ -17,11 +17,10 @@ import FoundationNetworking
 #endif
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
-import AsyncHelpers
 import Logging
 
 final class LockedResult<R: Sendable>: @unchecked Sendable {
-    let lock = Locking.FastLock()
+    let lock = NIOLock()
     var result: Result<R, any Error>?
     
     var value: Result<R, any Error>? {

@@ -16,10 +16,9 @@ import Foundation
 @preconcurrency import FoundationNetworking
 #endif
 import StructuredAPIClient
-import AsyncHelpers
 
 private final class TestTransportData: @unchecked Sendable {
-    let lock = Locking.FastLock()
+    let lock = NIOLock()
     var history: [URLRequest]
     var responses: [Result<TransportResponse, any Error>]
     
