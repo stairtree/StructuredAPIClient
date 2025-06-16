@@ -55,7 +55,7 @@ jobs:
                             -destination "${DESTINATION}" |
             xcbeautify --is-ci --quiet --renderer github-actions 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           swift: true
