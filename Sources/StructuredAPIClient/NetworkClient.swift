@@ -81,6 +81,6 @@ private extension Date {
 
 internal extension URLRequest {
     var debugString: String {
-        "\(self.httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0) " } ?? "")"
+        "\(self.httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0)" } ?? "")"
     }
 }
