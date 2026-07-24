@@ -80,7 +80,7 @@ jobs:
       - name: Install xcbeautify
         run: |
           DEBIAN_FRONTEND=noninteractive apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y curl
+          DEBIAN_FRONTEND=noninteractive apt-get install -y curl xz-utils
           curl -fsSLO 'https://github.com/tuist/xcbeautify/releases/download/1.0.1/xcbeautify-1.0.1-x86_64-unknown-linux-gnu.tar.xz'
           tar -x -J -f xcbeautify-1.0.1-x86_64-unknown-linux-gnu.tar.xz
       - name: Run tests
