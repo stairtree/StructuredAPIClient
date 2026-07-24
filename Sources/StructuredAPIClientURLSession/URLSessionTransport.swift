@@ -46,16 +46,15 @@ public final class URLSessionTransport: Transport {
         }
         self.session.dataTask(with: urlRequest) { data, response, error in
             if let error {
-                // A cancelled `URLSessionTask` reports an error in the `NSURLErrorDomain` with code
-                // `NSURLErrorCancelled`, *not* a Swift `CancellationError`, so both must be checked
-                // to reliably map cancellation onto `TransportFailure.cancelled`. The `NSError`
-                // inspection is Darwin-only because that Foundation type is unavailable in the
-                // slimmed-down Foundation used on some non-Darwin platforms; elsewhere `URLSession`
-                // is a secondary transport, so a plain `CancellationError` check suffices.
+                // A cancelled `URLSessionTask` reports `URLError.cancelled` (`NSURLErrorCancelled`),
+                // *not* a Swift `CancellationError`, so both must be checked to reliably map
+                // cancellation onto `TransportFailure.cancelled`. `URLError` is available on Darwin
+                // and on glibc-based Linux (swift-foundation's `FoundationNetworking`), but not in
+                // the slimmed-down Foundation of the static musl SDK, so the check is gated to those
+                // platforms; elsewhere a plain `CancellationError` check suffices.
                 let failure: TransportFailure
-                #if canImport(Darwin)
-                let nsError = error as NSError
-                if error is CancellationError || (nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled) {
+                #if canImport(Darwin) || canImport(Glibc)
+                if error is CancellationError || (error as? URLError)?.code == .cancelled {
                     failure = .cancelled
                 } else {
                     failure = .unknown(error)
