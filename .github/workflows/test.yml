@@ -77,18 +77,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      - name: Install xcbeautify
-        run: |
-          DEBIAN_FRONTEND=noninteractive apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y curl xz-utils
-          curl -fsSLO 'https://github.com/tuist/xcbeautify/releases/download/1.0.1/xcbeautify-1.0.1-x86_64-unknown-linux-gnu.tar.xz'
-          tar -x -J -f xcbeautify-1.0.1-x86_64-unknown-linux-gnu.tar.xz
       - name: Run tests
         shell: bash
-        run: |
-          set -o pipefail && \
-            swift test --traits AsyncHTTPClientTransport --sanitize=thread --enable-code-coverage |
-            ./xcbeautify --is-ci --quiet --renderer github-actions
+        # xcbeautify is intentionally not used on Linux: the prebuilt binary is dynamically linked
+        # against the Swift Foundation runtime, which has no ABI stability guarantee, so it fails to
+        # resolve symbols (e.g. Foundation.FileAttributeKey) against Swift 6.3 / nightly images.
+        run: swift test --traits AsyncHTTPClientTransport --sanitize=thread --enable-code-coverage
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
         with:
