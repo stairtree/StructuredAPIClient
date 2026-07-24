@@ -11,11 +11,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-@preconcurrency import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
-import Logging
+public import Logging
 
 // Handle token auth and add appropriate auth headers to requests sent by an existing ``Transport``.
 public final class TokenAuthenticationHandler: Transport {
@@ -29,7 +30,7 @@ public final class TokenAuthenticationHandler: Transport {
         self.auth = AuthState(accessToken: accessToken, refreshToken: refreshToken, provider: tokenProvider, logger: logger)
     }
 
-    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
+    public func send(request: TransportRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
         self.auth.token { result in
             switch result {
             case let .failure(error):

@@ -11,10 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
+import HTTPTypes
 
 /// Add headers to all requests made by an existing ``Transport``.
 public final class AddHTTPHeadersHandler: Transport {
@@ -22,13 +19,13 @@ public final class AddHTTPHeadersHandler: Transport {
     /// An enumeration of the possible modes for working with headers.
     public enum Mode: CaseIterable, Sendable, Hashable {
         /// Accumulating behavior - if a given header is already specified by a request, the transport's
-        /// value is appended, as per `URLRequest.addValue(_:forHTTPHeaderField:)`.
+        /// value is appended to the existing header value.
         ///
         /// - Warning: This is rarely what you want.
         case append
         
         /// Overwriting behavior - if a given header is already specified by a request, the transport's
-        /// value for the header replaces it, as per `URLRequest.setValue(_:forHTTPHeaderField:)`. In this
+        /// value for the header replaces it. In this
         /// mode, a request's header value is always overwritten.
         case replace
         
@@ -47,7 +44,7 @@ public final class AddHTTPHeadersHandler: Transport {
     /// Additional headers that will be applied to the request upon sending.
     private let headers: [String: String]
 
-    /// The mode used to add additional headers. Defaults to ``Mode/append`` for legacy compatibility.
+    /// The mode used to add additional headers. Defaults to ``Mode/add``.
     private let mode: Mode
     
     /// Create a ``Transport`` that adds headers to the given base ``Transport``
@@ -63,7 +60,7 @@ public final class AddHTTPHeadersHandler: Transport {
     }
 
     // See `Transport.send(request:completion:)`
-    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
+    public func send(request: TransportRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
         guard !self.headers.isEmpty else {
             return self.next?.send(request: request, completion: completion) ?? ()
         }
@@ -71,14 +68,19 @@ public final class AddHTTPHeadersHandler: Transport {
         var newRequest = request
 
         for (key, value) in self.headers {
+            guard let name = HTTPField.Name(key) else { continue }
             switch self.mode {
                 case .replace:
-                    newRequest.setValue(value, forHTTPHeaderField: key)
+                    newRequest.head.headerFields[name] = value
                 case .add:
-                    guard newRequest.value(forHTTPHeaderField: key) == nil else { break }
+                    guard newRequest.head.headerFields[name] == nil else { break }
                     fallthrough
                 case .append:
-                    newRequest.addValue(value, forHTTPHeaderField: key)
+                    if let existing = newRequest.head.headerFields[name] {
+                        newRequest.head.headerFields[name] = "\(existing), \(value)"
+                    } else {
+                        newRequest.head.headerFields[name] = value
+                    }
             }
         }
         self.next!.send(request: newRequest, completion: completion)

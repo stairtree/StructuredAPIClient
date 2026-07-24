@@ -11,11 +11,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
-import StructuredAPIClient
+public import StructuredAPIClient
+import HTTPTypes
 
 /// A ``NetworkRequest`` that simply requests the base URL (optionally with additional headers added)
 /// and expects UTF-8 `String`s as responses.
@@ -30,9 +32,12 @@ public struct TestRequest: NetworkRequest {
         String(decoding: response.body, as: UTF8.self)
     }
     
-    public func makeRequest(baseURL: URL) throws -> URLRequest {
-        var request = URLRequest(url: baseURL)
-        extraHeaders.forEach { request.addValue($1, forHTTPHeaderField: $0) }
-        return request
+    public func makeRequest(baseURL: URL) throws -> TransportRequest {
+        var request = HTTPRequest(method: .get, scheme: nil, authority: nil, path: nil)
+        for (name, value) in extraHeaders {
+            guard let name = HTTPField.Name(name) else { continue }
+            request.headerFields[name] = value
+        }
+        return .init(url: baseURL, head: request)
     }
 }

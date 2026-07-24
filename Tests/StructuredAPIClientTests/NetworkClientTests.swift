@@ -12,12 +12,16 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#endif
+#if canImport(Foundation)
+import Foundation
 #endif
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
 import Logging
+import HTTPTypes
 
 final class LockedResult<R: Sendable>: @unchecked Sendable {
     let lock = NIOLock()
@@ -82,7 +86,7 @@ final class NetworkClientTests: XCTestCase {
 
     func testNetworkClient() throws {
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
         }
         let client = NetworkClient(baseURL: Self.baseTestURL, transport: TestTransport(responses: [response], assertRequest: requestAssertions))
@@ -95,9 +99,9 @@ final class NetworkClientTests: XCTestCase {
         let refreshToken = TestToken(raw: "def", expiresAt: Date())
         let tokenProvider = TestTokenProvider(accessToken: accessToken, refreshToken: refreshToken)
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["Authorization"], "Bearer abc")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("Authorization")!], "Bearer abc")
         }
         let client = NetworkClient(baseURL: Self.baseTestURL, transport:
             TokenAuthenticationHandler(
@@ -111,10 +115,10 @@ final class NetworkClientTests: XCTestCase {
     
     func testStackingHeaders() throws {
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1")
-            XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H1")!], "1")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H2")!], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
         let h1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1"])
@@ -126,10 +130,10 @@ final class NetworkClientTests: XCTestCase {
     
     func testConflictingHeaderDefaultMode() throws {
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-3")
-            XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H1")!], "1-3")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H2")!], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
         let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"])
@@ -142,10 +146,10 @@ final class NetworkClientTests: XCTestCase {
 
     func testConflictingHeaderAddMode() throws {
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-3")
-            XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H1")!], "1-3")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H2")!], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
         let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"], mode: .add)
@@ -158,10 +162,10 @@ final class NetworkClientTests: XCTestCase {
 
     func testConflictingHeaderAppendMode() throws {
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-3,1-2,1-1")
-            XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H1")!], "1-3, 1-2, 1-1")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H2")!], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
         let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"], mode: .append)
@@ -174,10 +178,10 @@ final class NetworkClientTests: XCTestCase {
 
     func testConflictingHeaderReplaceMode() throws {
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["H1"], "1-1")
-            XCTAssertEqual($0.allHTTPHeaderFields?["H2"], "2")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H1")!], "1-1")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("H2")!], "2")
         }
         let base = TestTransport(responses: [response], assertRequest: requestAssertions)
         let h1_1 = AddHTTPHeadersHandler(base: base, headers: ["H1": "1-1"], mode: .replace)

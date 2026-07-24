@@ -11,30 +11,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !canImport(Darwin)
-@preconcurrency
-#endif
-import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
 
 public enum TransportFailure: Error, Equatable {
-    case invalidRequest(baseURL: URL, components: URLComponents?)
-    case network(URLError)
+    case invalidRequest(URL)
+    case network(String)
     case cancelled
     case unknown(any Error)
     
     public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-            case let (.invalidRequest(lurl, lcomp), .invalidRequest(rurl, rcomp)):
-                lurl == rurl && lcomp == rcomp
+            case let (.invalidRequest(lurl), .invalidRequest(rurl)):
+                lurl == rurl
             case let (.network(lerror), .network(rerror)):
                 lerror == rerror
             case (.cancelled, .cancelled):
                 true
             case let (.unknown(lerror), .unknown(rerror)):
-                (lerror as NSError) == (rerror as NSError)
+                String(describing: lerror) == String(describing: rerror)
             default:
                 false
         }

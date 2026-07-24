@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version: 6.3
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the StructuredAPIClient open source project
@@ -15,31 +15,35 @@
 import PackageDescription
 
 let swiftSettings: [SwiftSetting] = [
-    .enableUpcomingFeature("ForwardTrailingClosures"),
+    .enableUpcomingFeature("AsyncCallerExecution"),
     .enableUpcomingFeature("ExistentialAny"),
-    .enableUpcomingFeature("ConciseMagicFile"),
-    .enableUpcomingFeature("DisableOutwardActorInference"),
-    .enableExperimentalFeature("StrictConcurrency=complete"),
+    .enableUpcomingFeature("InternalImportsByDefault"),
+    .enableUpcomingFeature("MemberImportVisibility"),
+    .enableUpcomingFeature("InferIsolatedConformances"),
+    .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+    .enableUpcomingFeature("ImmutableWeakCaptures"),
+    .enableExperimentalFeature("AnyAppleOSAvailability"),
 ]
 
-let package = Package(
-    name: "StructuredAPIClient",
-    platforms: [
-        .macOS(.v10_15),
-        .iOS(.v13),
-        .watchOS(.v6),
-        .tvOS(.v13),
-    ],
-    products: [
-        .library(name: "StructuredAPIClient", targets: ["StructuredAPIClient"]),
-        .library(name: "StructuredAPIClientTestSupport", targets: ["StructuredAPIClientTestSupport"]),
-    ],
-    dependencies: [
-        // Swift logging API
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
-        .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.2"),
-    ],
-    targets: [
+let products: [Product] = [
+    .library(name: "StructuredAPIClient", targets: ["StructuredAPIClient"]),
+    .library(name: "StructuredAPIClientURLSession", targets: ["StructuredAPIClientURLSession"]),
+    .library(name: "StructuredAPIClientAsyncHTTPClient", targets: ["StructuredAPIClientAsyncHTTPClient"]),
+    .library(name: "StructuredAPIClientHTTPURLConnection", targets: ["StructuredAPIClientHTTPURLConnection"]),
+    .library(name: "StructuredAPIClientTestSupport", targets: ["StructuredAPIClientTestSupport"]),
+]
+
+// `async-http-client`/`swift-nio` and `swift-java` are only resolved when their respective traits
+// are enabled, because the only targets that reference them gate those references behind the trait.
+let dependencies: [Package.Dependency] = [
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
+    .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.2"),
+    .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.28.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.101.3"),
+    .package(url: "https://github.com/swiftlang/swift-java", branch: "main"),
+]
+
+let targets: [Target] = [
         .target(
             name: "StructuredAPIClient",
             dependencies: [
@@ -49,9 +53,30 @@ let package = Package(
             swiftSettings: swiftSettings
         ),
         .target(
+            name: "StructuredAPIClientURLSession",
+            dependencies: [
+                .target(name: "StructuredAPIClient"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+                .product(name: "HTTPTypesFoundation", package: "swift-http-types"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "StructuredAPIClientAsyncHTTPClient",
+            dependencies: [
+                .target(name: "StructuredAPIClient"),
+                .product(name: "AsyncHTTPClient", package: "async-http-client", condition: .when(traits: ["AsyncHTTPClientTransport"])),
+                .product(name: "NIOCore", package: "swift-nio", condition: .when(traits: ["AsyncHTTPClientTransport"])),
+                .product(name: "NIOHTTP1", package: "swift-nio", condition: .when(traits: ["AsyncHTTPClientTransport"])),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .target(
             name: "StructuredAPIClientTestSupport",
             dependencies: [
                 .target(name: "StructuredAPIClient"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
             ],
             swiftSettings: swiftSettings
         ),
@@ -63,5 +88,63 @@ let package = Package(
             ],
             swiftSettings: swiftSettings
         ),
-    ]
+        .testTarget(
+            name: "StructuredAPIClientURLSessionTests",
+            dependencies: [
+                .target(name: "StructuredAPIClient"),
+                .target(name: "StructuredAPIClientURLSession"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "StructuredAPIClientAsyncHTTPClientTests",
+            dependencies: [
+                .target(name: "StructuredAPIClient"),
+                .target(name: "StructuredAPIClientAsyncHTTPClient"),
+                .product(name: "AsyncHTTPClient", package: "async-http-client", condition: .when(traits: ["AsyncHTTPClientTransport"])),
+                .product(name: "NIOCore", package: "swift-nio", condition: .when(traits: ["AsyncHTTPClientTransport"])),
+                .product(name: "NIOHTTP1", package: "swift-nio", condition: .when(traits: ["AsyncHTTPClientTransport"])),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ],
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "StructuredAPIClientHTTPURLConnection",
+            dependencies: [
+                .target(name: "StructuredAPIClient"),
+                .product(name: "SwiftJava", package: "swift-java", condition: .when(traits: ["HTTPURLConnectionTransport"])),
+                .product(name: "JavaNet", package: "swift-java", condition: .when(traits: ["HTTPURLConnectionTransport"])),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ],
+            swiftSettings: [.swiftLanguageMode(.v5)] + swiftSettings
+        ),
+]
+
+let package = Package(
+    name: "StructuredAPIClient",
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v13),
+        .watchOS(.v6),
+        .tvOS(.v13),
+    ],
+    products: products,
+    traits: [
+        // All transport-specific dependencies are opt-in and disabled by default, so a consumer
+        // that only uses the URLSession transport (or the core alone) doesn't resolve the SwiftNIO /
+        // AsyncHTTPClient or swift-java dependency trees. Enable a trait via, e.g.,
+        // `.package(url: "...", traits: ["AsyncHTTPClientTransport"])`.
+        .default(enabledTraits: []),
+        .trait(
+            name: "AsyncHTTPClientTransport",
+            description: "Enables the AsyncHTTPClient-backed transport and its SwiftNIO dependencies."
+        ),
+        .trait(
+            name: "HTTPURLConnectionTransport",
+            description: "Enables the java.net.HttpURLConnection-backed transport (Android) and its swift-java dependency."
+        ),
+    ],
+    dependencies: dependencies,
+    targets: targets
 )

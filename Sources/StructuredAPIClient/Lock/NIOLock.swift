@@ -13,20 +13,20 @@
 //===----------------------------------------------------------------------===//
 
 #if canImport(Darwin)
-import Darwin
+public import Darwin
 #elseif os(Windows)
-import ucrt
-import WinSDK
+public import ucrt
+public import WinSDK
 #elseif canImport(Glibc)
-@preconcurrency import Glibc
+@preconcurrency public import Glibc
 #elseif canImport(Musl)
-@preconcurrency import Musl
+@preconcurrency public import Musl
 #elseif canImport(Bionic)
-@preconcurrency import Bionic
+@preconcurrency public import Bionic
 #elseif canImport(WASILibc)
-@preconcurrency import WASILibc
+@preconcurrency public import WASILibc
 #if canImport(wasi_pthread)
-import wasi_pthread
+public import wasi_pthread
 #endif
 #else
 #error("The concurrency NIOLock module was unable to identify your C library.")
@@ -35,21 +35,29 @@ import wasi_pthread
 #if os(Windows)
 @usableFromInline
 typealias LockPrimitive = SRWLOCK
+#elseif os(FreeBSD) || os(OpenBSD)
+@usableFromInline
+typealias LockPrimitive = pthread_mutex_t?
 #else
 @usableFromInline
 typealias LockPrimitive = pthread_mutex_t
 #endif
 
 @usableFromInline
-enum LockOperations {}
+enum LockOperations: Sendable {}
 
 extension LockOperations {
     @inlinable
     static func create(_ mutex: UnsafeMutablePointer<LockPrimitive>) {
         mutex.assertValidAlignment()
         
-#if os(Windows)
+        #if os(Windows)
         InitializeSRWLock(mutex)
+        #elseif os(FreeBSD) || os(OpenBSD)
+        var attr = pthread_mutexattr_t(bitPattern: 0)
+        pthread_mutexattr_init(&attr)
+        let err = pthread_mutex_init(mutex, &attr)
+        precondition(err == 0, "\(#function) failed in pthread_mutex with error \(err)")
 #elseif (compiler(<6.1) && !os(WASI)) || (compiler(>=6.1) && _runtime(_multithreaded))
         var attr = pthread_mutexattr_t()
         pthread_mutexattr_init(&attr)
@@ -184,6 +192,13 @@ final class LockStorage<Value>: ManagedBuffer<Value, LockPrimitive> {
         }
     }
 }
+
+// This compiler guard is here becaue `ManagedBuffer` is already declaring
+// Sendable unavailability after 6.1, which `LockStorage` inherits.
+#if compiler(<6.2)
+@available(*, unavailable)
+extension LockStorage: Sendable {}
+#endif
 
 /// A threading lock based on `libpthread` instead of `libdispatch`.
 ///

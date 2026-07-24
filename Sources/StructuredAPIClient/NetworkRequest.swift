@@ -11,20 +11,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
-import HTTPTypes
+public import HTTPTypes
 
-/// Any request that can be sent as a `URLRequest` with a ``NetworkClient``, and returns a response.
+/// Any request that can be sent with a ``NetworkClient``, and returns a response.
 public protocol NetworkRequest: Sendable {
     /// The decoded data type that represents the response.
     associatedtype ResponseDataType: Sendable
     
-    /// Returns a request based on the given base URL.
+    /// Returns a transport request based on the given base URL.
     /// - Parameter baseURL: The ``NetworkClient``'s base URL.
-    func makeRequest(baseURL: URL) throws -> URLRequest
+    func makeRequest(baseURL: URL) throws -> TransportRequest
     
     /// Processes a response returned from the transport and either returns the associated response type
     /// or throws an application-specific error.

@@ -11,32 +11,70 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
-import HTTPTypes
+public import HTTPTypes
+
+/// An HTTP request prepared by a ``NetworkRequest`` for a ``Transport``.
+///
+/// This is intentionally separate from Foundation's `URLRequest`. Transports convert it to the
+/// request type required by their underlying HTTP implementation.
+public struct TransportRequest: Sendable {
+    /// The destination URL for the request.
+    public let url: URL
+
+    /// The HTTP request head.
+    public var head: HTTPRequest
+
+    /// The optional request body.
+    public var body: Data?
+
+    /// An optional transport-specific timeout in seconds.
+    public var timeoutInterval: TimeInterval?
+
+    public init(
+        url: URL,
+        head: HTTPRequest,
+        body: Data? = nil,
+        timeoutInterval: TimeInterval? = nil
+    ) {
+        self.url = url
+        self.head = head
+        self.body = body
+        self.timeoutInterval = timeoutInterval
+    }
+}
 
 /// A successful response from a ``Transport``.
 public struct TransportResponse: Sendable {
-    /// The received HTTP status code.
-    public let status: HTTPResponse.Status
-    
-    /// Any received HTTP headers, if the transport in use provides them.
-    public let headers: HTTPFields
+    /// The received HTTP response head.
+    public let head: HTTPResponse
     
     /// The raw HTTP response body. If there was no response body, this will have a zero length.
     public let body: Data
     
     /// Create a new ``TransportResponse``. Intended for use by ``Transport`` implementations.
-    public init(status: HTTPResponse.Status, headers: HTTPFields, body: Data) {
-        self.status = status
-        self.headers = headers
+    public init(head: HTTPResponse, body: Data) {
+        self.head = head
         self.body = body
+    }
+
+    /// The received HTTP status code.
+    public var status: HTTPResponse.Status { self.head.status }
+
+    /// Any received HTTP headers, if the transport in use provides them.
+    public var headers: HTTPFields { self.head.headerFields }
+
+    /// Creates a response from individual HTTP response values.
+    public init(status: HTTPResponse.Status, headers: HTTPFields, body: Data) {
+        self.init(head: .init(status: status, headerFields: headers), body: body)
     }
 }
 
-/// A ``Transport`` asynchronously maps a `URLRequest` to a ``TransportResponse``.
+/// A ``Transport`` asynchronously maps a ``TransportRequest`` to a ``TransportResponse``.
 public protocol Transport: Sendable {
     /// Sends the request and delivers the response asynchronously to a completion handler.
     ///
@@ -48,7 +86,7 @@ public protocol Transport: Sendable {
     ///   - request: The request to be sent.
     ///   - completion: The completion handler that is called after the response is received.
     ///   - response: The received response from the server, or an error indicating a transport-level failure.
-    func send(request: URLRequest, completion: @escaping @Sendable (_ result: Result<TransportResponse, any Error>) -> Void)
+    func send(request: TransportRequest, completion: @escaping @Sendable (_ result: Result<TransportResponse, any Error>) -> Void)
     
     /// The next ``Transport`` that the request is being forwarded to.
     ///
@@ -81,11 +119,16 @@ extension Transport {
     ///   - request: The request to be sent.
     /// - Returns: The received response from the server.
     /// - Throws: An error indicating a transport-level failure.
-    public func send(request: URLRequest) async throws -> TransportResponse {
-        try await withCheckedThrowingContinuation { continuation in
-            self.send(request: request, completion: {
-                continuation.resume(with: $0)
-            })
+    public func send(request: TransportRequest) async throws -> TransportResponse {
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                self.send(request: request, completion: {
+                    continuation.resume(with: $0)
+                })
+            }
+        } onCancel: {
+            // Propagate structured-concurrency cancellation down to the transport chain.
+            self.cancel()
         }
     }
 }

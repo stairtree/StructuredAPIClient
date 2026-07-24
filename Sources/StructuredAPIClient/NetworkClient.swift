@@ -11,19 +11,30 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-@preconcurrency import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
-import Logging
+public import Logging
+import HTTPTypes
 
-public final class NetworkClient {
+public final class NetworkClient: Sendable {
     public let baseURL: URL
-    let transport: () -> any Transport
+    let transport: @Sendable () -> any Transport
     let logger: Logger
 
     /// Create a new `NetworkClient` from a base URL, a `Transport`, and an optional `Logger`.
-    public init(baseURL: URL, transport: @escaping @Sendable @autoclosure () -> any Transport = URLSessionTransport(.shared), logger: Logger? = nil) {
+    ///
+    /// Transport implementations are supplied by separate products, such as
+    /// `StructuredAPIClientURLSession` or `StructuredAPIClientAsyncHTTPClient`.
+    ///
+    /// - Important: `transport` is an `@autoclosure`, so its expression is re-evaluated on every
+    ///   request. Passing a *stored* transport instance reuses it across requests; passing a
+    ///   freshly-constructed chain inline (e.g. `TokenAuthenticationHandler(...)`) rebuilds it —
+    ///   and any state it holds, such as cached auth tokens — for each request. Store stateful
+    ///   transports in a `let` and pass that.
+    public init(baseURL: URL, transport: @escaping @Sendable @autoclosure () -> any Transport, logger: Logger? = nil) {
         self.baseURL = baseURL
         self.transport = transport
         self.logger = logger ?? Logger(label: "NetworkClient")
@@ -32,18 +43,18 @@ public final class NetworkClient {
     /// Fetch any ``NetworkRequest`` type and return the response asynchronously.
     public func load<Request: NetworkRequest>(_ req: Request, completion: @escaping @Sendable (Result<Request.ResponseDataType, any Error>) -> Void) {
         let start = Date()
-        // Construct the URLRequest
+        // Construct the transport request.
         do {
             let logger = self.logger
-            let urlRequest = try req.makeRequest(baseURL: self.baseURL)
+            let transportRequest = try req.makeRequest(baseURL: self.baseURL)
 
             // Send it to the transport
-            self.transport().send(request: urlRequest) { result in
+            self.transport().send(request: transportRequest) { result in
                 let middle = Date()
-                logger.trace("Request '\(urlRequest.debugString)' received response in \(start.millisecondsBeforeNowFormatted)ms")
+                logger.trace("Request '\(transportRequest.debugString)' received response in \(start.millisecondsBeforeNowFormatted)ms")
                 defer {
-                    logger.trace("Request '\(urlRequest.debugString)' was processed in \(middle.millisecondsBeforeNowFormatted)ms")
-                    logger.trace("Request '\(urlRequest.debugString)' took a total of \(start.millisecondsBeforeNowFormatted)ms")
+                    logger.trace("Request '\(transportRequest.debugString)' was processed in \(middle.millisecondsBeforeNowFormatted)ms")
+                    logger.trace("Request '\(transportRequest.debugString)' took a total of \(start.millisecondsBeforeNowFormatted)ms")
                 }
                 
                 completion(result.flatMap { resp in .init { try req.parseResponse(resp) } })
@@ -79,8 +90,8 @@ private extension Date {
     }
 }
 
-internal extension URLRequest {
+internal extension TransportRequest {
     var debugString: String {
-        "\(self.httpMethod.map { "[\($0)] " } ?? "")\(url.map { "\($0)" } ?? "")"
+        "[\(self.head.method.rawValue)] \(self.url)"
     }
 }

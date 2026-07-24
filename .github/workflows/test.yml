@@ -69,9 +69,8 @@ jobs:
       fail-fast: false
       matrix:
         swift-image:
-          - swift:5.9-jammy
-          - swiftlang/swift:nightly-5.10-jammy
-          - swiftlang/swift:nightly-main-jammy
+          - swift:6.3-noble
+          - swiftlang/swift:nightly-main-noble
     name: Linux ${{ matrix.swift-image }} Tests
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
@@ -88,7 +87,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail && \
-            swift test --sanitize=thread --enable-code-coverage |
+            swift test --traits AsyncHTTPClientTransport --sanitize=thread --enable-code-coverage |
             ./xcbeautify --is-ci --quiet --renderer github-actions
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
@@ -99,7 +98,7 @@ jobs:
   dependency-graph:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
-    container: swift:jammy
+    container: swift:noble
     permissions:
       contents: write
     steps:

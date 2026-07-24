@@ -11,23 +11,25 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
 import Foundation
-#if canImport(FoundationNetworking)
-@preconcurrency import FoundationNetworking
 #endif
-import StructuredAPIClient
+public import StructuredAPIClient
+import HTTPTypes
 
 private final class TestTransportData: @unchecked Sendable {
     let lock = NIOLock()
-    var history: [URLRequest]
+    var history: [TransportRequest]
     var responses: [Result<TransportResponse, any Error>]
     
-    init(history: [URLRequest], responses: [Result<TransportResponse, any Error>]) {
+    init(history: [TransportRequest], responses: [Result<TransportResponse, any Error>]) {
         self.history = history
         self.responses = responses
     }
     
-    func withLock<R>(_ closure: @escaping @Sendable (inout [URLRequest], inout [Result<TransportResponse, any Error>]) throws -> R) rethrows -> R {
+    func withLock<R>(_ closure: @escaping @Sendable (inout [TransportRequest], inout [Result<TransportResponse, any Error>]) throws -> R) rethrows -> R {
         try self.lock.withLock {
             try closure(&self.history, &self.responses)
         }
@@ -37,14 +39,14 @@ private final class TestTransportData: @unchecked Sendable {
 /// A ``Transport`` that synchronously returns static values for tests
 public final class TestTransport: Transport {
     private let data: TestTransportData
-    let assertRequest: @Sendable (URLRequest) -> Void
+    let assertRequest: @Sendable (TransportRequest) -> Void
 
-    public init(responses: [Result<TransportResponse, any Error>], assertRequest: @escaping @Sendable (URLRequest) -> Void = { _ in }) {
+    public init(responses: [Result<TransportResponse, any Error>], assertRequest: @escaping @Sendable (TransportRequest) -> Void = { _ in }) {
         self.data = .init(history: [], responses: responses)
         self.assertRequest = assertRequest
     }
 
-    public func send(request: URLRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
+    public func send(request: TransportRequest, completion: @escaping @Sendable (Result<TransportResponse, any Error>) -> Void) {
         self.assertRequest(request)
         self.data.withLock { history, responses in
             history.append(request)

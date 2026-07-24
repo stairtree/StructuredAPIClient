@@ -11,11 +11,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+public import FoundationEssentials
+#else
+public import Foundation
 #endif
-import StructuredAPIClient
+public import StructuredAPIClient
 
 /// A ``TokenProvider`` that returns a given access token and refresh token for the respective requests.
 public final class TestTokenProvider: TokenProvider, Sendable {

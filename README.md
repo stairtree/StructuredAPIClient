@@ -26,22 +26,65 @@ For more information, browse the API documentation (_coming soon_).
 
 ## Supported Platforms
 
-StructuredAPIClient is tested on macOS, iOS, tvOS, Linux, and Windows, and is known to support the following operating system versions:
+StructuredAPIClient is tested on macOS, iOS, tvOS, watchOS, and Linux, and is known to support the following operating system versions:
 
-* Ubuntu 20.04+
-* AmazonLinux2
-* macOS 10.12+
-* iOS 12+
-* tvOS 12+
-* watchOS 5+
-* Windows 10 (using the latest Swift development snapshot)
+* Ubuntu 22.04+ / Amazon Linux 2
+* macOS 10.15+
+* iOS 13+
+* tvOS 13+
+* watchOS 6+
+* Android (via the `HTTPURLConnectionTransport` trait and a swift-java toolchain)
 
-To integrate the package:
+## Transports
+
+The core `StructuredAPIClient` target is independent of any particular HTTP stack. You choose a
+transport implementation from a separate product:
+
+| Product | Backing stack | Notes |
+| --- | --- | --- |
+| `StructuredAPIClientURLSession` | Foundation `URLSession` | Best on Apple platforms; no extra dependencies. |
+| `StructuredAPIClientAsyncHTTPClient` | [AsyncHTTPClient](https://github.com/swift-server/async-http-client) / SwiftNIO | Recommended for Linux servers. Requires the `AsyncHTTPClientTransport` trait. |
+| `StructuredAPIClientHTTPURLConnection` | Java `HttpURLConnection` | For Android. Requires the `HTTPURLConnectionTransport` trait and a swift-java toolchain. |
+
+The AsyncHTTPClient and HTTPURLConnection transports pull in heavy dependency trees (SwiftNIO and
+swift-java respectively), so they are gated behind **package traits** that are *disabled by default*.
+A consumer that only uses `URLSession` (or the core alone) never resolves those dependencies.
+
+## Integration
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", from: "2.0.0")
+    .package(url: "https://github.com/stairtree/StructuredAPIClient.git", from: "3.0.0"),
 ]
+```
+
+Then depend on the transport product you want. For `URLSession` (no trait needed):
+
+```swift
+.target(name: "MyApp", dependencies: [
+    .product(name: "StructuredAPIClient", package: "StructuredAPIClient"),
+    .product(name: "StructuredAPIClientURLSession", package: "StructuredAPIClient"),
+])
+```
+
+For AsyncHTTPClient, enable the trait on the package dependency:
+
+```swift
+.package(url: "https://github.com/stairtree/StructuredAPIClient.git", from: "3.0.0", traits: ["AsyncHTTPClientTransport"]),
+```
+
+## Usage
+
+```swift
+import StructuredAPIClient
+import StructuredAPIClientURLSession
+
+// Store the transport (and any handler chain) so cached state — such as auth tokens — is reused
+// across requests. See the `NetworkClient.init` docs about the `@autoclosure` transport parameter.
+let transport = URLSessionTransport(.shared)
+let client = NetworkClient(baseURL: URL(string: "https://api.example.com")!, transport: transport)
+
+let result = try await client.load(MyRequest())
 ```
 
 ---

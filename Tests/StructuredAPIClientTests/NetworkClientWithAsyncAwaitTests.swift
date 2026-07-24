@@ -12,11 +12,14 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-#if canImport(FoundationNetworking)
-import FoundationNetworking
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
+import Foundation
 #endif
 @testable import StructuredAPIClient
 import StructuredAPIClientTestSupport
+import HTTPTypes
 
 final class NetworkClientWithAsyncAwaitTests: XCTestCase {
     override class func setUp() {
@@ -25,13 +28,15 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
         
     func testNetworkClientWithAsyncAwait() async throws {
         struct TestRequest: NetworkRequest {
-            func makeRequest(baseURL: URL) throws -> URLRequest { URLRequest(url: baseURL) }
+            func makeRequest(baseURL: URL) throws -> TransportRequest {
+                .init(url: baseURL, head: .init(method: .get, scheme: nil, authority: nil, path: nil))
+            }
             func parseResponse(_ response: TransportResponse) throws -> String { .init(decoding: response.body, as: UTF8.self) }
         }
         
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
         
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
         }
         
@@ -45,7 +50,9 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
     
     func testTokenAuthWithAsyncAwait() async throws {
         struct TestRequest: NetworkRequest {
-            func makeRequest(baseURL: URL) throws -> URLRequest { URLRequest(url: baseURL) }
+            func makeRequest(baseURL: URL) throws -> TransportRequest {
+                .init(url: baseURL, head: .init(method: .get, scheme: nil, authority: nil, path: nil))
+            }
             func parseResponse(_ response: TransportResponse) throws -> String { .init(decoding: response.body, as: UTF8.self) }
         }
 
@@ -56,9 +63,9 @@ final class NetworkClientWithAsyncAwaitTests: XCTestCase {
 
         let response: Result<TransportResponse, any Error> = .success(.init(status: .ok, headers: [:], body: Data("Test".utf8)))
 
-        let requestAssertions: @Sendable (URLRequest) -> Void = {
+        let requestAssertions: @Sendable (TransportRequest) -> Void = {
             XCTAssertEqual($0.url, URL(string: "https://test.somewhere.com")!)
-            XCTAssertEqual($0.allHTTPHeaderFields?["Authorization"], "Bearer abc")
+            XCTAssertEqual($0.head.headerFields[HTTPField.Name("Authorization")!], "Bearer abc")
         }
 
         let client = NetworkClient(
