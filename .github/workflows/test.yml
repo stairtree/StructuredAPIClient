@@ -75,6 +75,11 @@ jobs:
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     steps:
+      - name: Install dependencies
+        # curl is required by the codecov upload step and is not present on the noble Swift images.
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y curl
       - name: Checkout code
         uses: actions/checkout@v5
       - name: Run tests
@@ -86,8 +91,8 @@ jobs:
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.3
         with:
-          cc_token: ${{ secrets.CODECOV_TOKEN }}
-          cc_verbose: true
+          codecov_token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
 
   dependency-graph:
     if: ${{ github.event_name == 'push' }}
