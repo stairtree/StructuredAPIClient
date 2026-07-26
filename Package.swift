@@ -131,11 +131,6 @@ let package = Package(
     ],
     products: products,
     traits: [
-        // All transport-specific dependencies are opt-in and disabled by default, so a consumer
-        // that only uses the URLSession transport (or the core alone) doesn't resolve the SwiftNIO /
-        // AsyncHTTPClient or swift-java dependency trees. Enable a trait via, e.g.,
-        // `.package(url: "...", traits: ["AsyncHTTPClientTransport"])`.
-        .default(enabledTraits: []),
         .trait(
             name: "AsyncHTTPClientTransport",
             description: "Enables the AsyncHTTPClient-backed transport and its SwiftNIO dependencies."
