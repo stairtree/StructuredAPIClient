@@ -40,7 +40,7 @@ let dependencies: [Package.Dependency] = [
     .package(url: "https://github.com/apple/swift-http-types.git", from: "1.0.2"),
     .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.28.0"),
     .package(url: "https://github.com/apple/swift-nio.git", from: "2.101.3"),
-    .package(url: "https://github.com/swiftlang/swift-java", branch: "main"),
+    .package(url: "https://github.com/swiftlang/swift-java", from: "0.5.0"),
 ]
 
 let targets: [Target] = [
